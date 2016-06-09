@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      th:include="fragments/layout :: page">
+<head>
+    <title>Administration</title>
+</head>
+<body>
+<div th:fragment="content">
+    <div id="main" >
+        <div ng-repeat="i in maps" on-last-repeat>
+            <div class="row" style="margin-top:15px !important;">
+                <div class="col-md-4">
+                        <div class="product-card" >
+                            <div class="card" style="height:300px !important;">
+                                <div class="card-image waves-effect waves-block waves-light">
+                                    <i class="{{i.class}}"></i>
+                                    <img src="{{i.vehicule.image}}" alt="product-img" style="height: 200px;">
+                                </div>
+                                <ul class="card-action-buttons">
+
+                                    </li>
+                                    <li><a class="btn-floating waves-effect waves-light light-blue" ng-click="chargerMaps(i)"><i class="mdi-maps-pin-drop activator"></i></a>
+                                    </li>
+                                </ul>
+                                <div class="card-content">
+
+                                    <div class="row">
+                                        <div class="col s8">
+                                            <p><i class="mdi-maps-directions-car cyan-text text-darken-2"></i><span style="font-weight: bolder"> Matricule : </span><span>{{i.vehicule.matricule}}</span>  </p>
+                                            <p><i class="mdi-action-perm-identity cyan-text text-darken-2"></i><span style="font-weight: bolder"> Chaffeur : </span><span>{{i.vehicule.chauffeur.name}}</span>  </p>
+                                        </div>
+                                        <div class="col s4 no-padding">
+
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-reveal" style="display: none; transform: translateY(0px);">
+                                    <span class="card-title grey-text text-darken-4"><i class="mdi-navigation-close right" ng-click="close(i)"></i> </span>
+                                    <div style="display: none;" id="{{i.vehicule.matricule}}"></div>
+
+                                </div>
+                            </div>
+                        </div>
+                </div>
+                <div class="col-md-8">
+                    <div id="{{'chart'+i.vehicule.matricule}}" style="height:300px;width:100%;"></div>
+                </div>
+
+            </div>
+        </div>
+
+
+    </div>
+
+</div>
+</body>
+<div th:fragment="script">
+    <script src="../Scripts/echarts.js"></script>
+    <script src="../Scripts/echarts-all.js"></script>
+    <script src="../Scripts/gauge.js"></script>
+    <script>
+    $(document).ready(function () {
+
+
+        app.controller("AdminCtrl", ['$filter','$scope', '$http', '$element', 'Animations', 'uiGridConstants', '$timeout', '$interval', '$attrs', 'crudGridDataFactory', 'notificationFactory', 'lookupFactory', function ($filter,$scope, $http, $element, Animations, uiGridConstants, $timeout, $interval, $attrs, crudGridDataFactory, notificationFactory, lookupFactory) {
+            $scope.data = [];
+
+            $scope.vehicules = lookupFactory.getAll("vehicules");
+
+            $scope.loadMaps = function()
+            {
+                $scope.maps = [];
+                for(var i = 0;i<$scope.vehicules.length;i++)
+                {
+                    v = $scope.vehicules[i];
+                    $scope.maps.push({vehicule:v});
+                }
+            }
+            $scope.loadMaps();
+
+            $scope.close = function(i)
+            {
+                //delete i.compteur;
+                delete i.map;
+                $("#"+ i.vehicule.matricule).css({"display":"none"});
+            }
+
+
+            var Repeater = function () {
+                for(var i = 0;i<$scope.maps.length;i++)
+                {
+
+
+
+
+                    var map = $scope.maps[i].map;
+                    var map_ = $scope.maps[i];
+                    if(map == undefined || map == null) continue;
+                    map.removeMarkers();
+                    $scope.loadMarkers($scope.maps[i]);
+
+                    $scope.$apply(function () {
+
+                        $.ajax({
+                            url: '/rest/positions/findTopByVehicule_IdOrderByDateDesc?idVehicule='+$scope.maps[i].vehicule.id,
+                            cache: false,
+                            async: false,
+                            success: function (data) {
+                                if(data == null || data == "" || data == undefined) return;
+                                if(map.marker != undefined)
+                                {
+                                    map.marker.setMap(null);
+                                }
+                                //  setTimeout(function(){
+                                map.marker = map.addMarker({
+                                    lat: data.latitude,
+                                    lng: data.longitude,
+                                    icon: (map_.vitesse == undefined) ? '/icons/truck3.png':'/icons/truck_green.png',
+                                    infoWindow : {
+                                        content : '<div class="marker"><img src="/icons/truck3.png"/><div class="titre">'+
+                                        data.vehicule.matricule+'</div><div class="adresse">' +
+                                        '<span><b>Chauffeur :</b> </span>'+data.vehicule.chauffeur.name+'</div>'+
+                                        '<div class="adresse"><span><b>Latitude :</b> </span>'+data.latitude+'</div>'+
+                                        '<div class="adresse"><span><b>Longitude :</b> </span>'+data.longitude+'</div>'+
+                                        '<div class="adresse"><span><b>Date :</b> </span>'+$filter("date")(data.date,"dd/MM/yyyy HH:mm:ss")+'</div>'+
+                                        '</div>',
+                                        click: function (e) {
+                                            // alert('teest');
+                                        }
+                                    }
+                                });
+                                map.setCenter(data.latitude, data.longitude);
+//                            },1500)
+
+                            }
+                        });
+
+                    });
+                }
+
+
+
+
+            };
+            var timer = setInterval(Repeater, 2000);
+
+            $scope.$on('onRepeatLast', function(scope, element, attrs){
+                for(var k=0;k<$scope.maps.length;k++)
+                {
+                    $scope.loadCompteur($scope.maps[k]);
+                }
+            });
+            $scope.loadCompteur = function(i){
+
+                i.compteur = echarts.init(document.getElementById("chart"+i.vehicule.matricule));
+                i.compteur.option = {
+                    backgroundColor: '#1b1b1b',
+                    tooltip : {
+                        formatter: "{a} <br/>{c} {b}"
+                    },
+                    toolbox: {
+                        show : false,
+                        feature : {
+                            mark : {show: false},
+                            restore : {show: false},
+                            saveAsImage : {show: true}
+                        }
+                    },
+                    series : [
+                        {
+                            name:'compteur',
+                            type:'gauge',
+                            min:0,
+                            max:220,
+                            splitNumber:11,
+                            axisLine: {
+                                lineStyle: {
+                                    color: [[0.09, 'lime'],[0.82, '#1e90ff'],[1, '#ff4500']],
+                                    width: 3,
+                                    shadowColor : '#fff',
+                                    shadowBlur: 10
+                                }
+                            },
+                            axisLabel: {
+                                textStyle: {
+                                    fontWeight: 'bolder',
+                                    color: '#fff',
+                                    shadowColor : '#fff',
+                                    shadowBlur: 10
+                                }
+                            },
+                            axisTick: {
+                                length :15,
+                                lineStyle: {
+                                    color: 'auto',
+                                    shadowColor : '#fff',
+                                    shadowBlur: 10
+                                }
+                            },
+                            splitLine: {
+                                length :25,
+                                lineStyle: {
+                                    width:3,
+                                    color: '#fff',
+                                    shadowColor : '#fff',
+                                    shadowBlur: 10
+                                }
+                            },
+                            pointer: {
+                                shadowColor : '#fff',
+                                shadowBlur: 5
+                            },
+                            title : {
+                                textStyle: {
+                                    fontWeight: 'bolder',
+                                    fontSize: 20,
+                                    fontStyle: 'italic',
+                                    color: '#fff',
+                                    shadowColor : '#fff',
+                                    shadowBlur: 10
+                                }
+                            },
+                            detail : {
+                                backgroundColor: 'rgba(30,144,255,0.8)',
+                                borderWidth: 1,
+                                borderColor: '#fff',
+                                shadowColor : '#fff',
+                                shadowBlur: 5,
+                                offsetCenter: [0, '50%'],
+                                textStyle: {
+                                    fontWeight: 'bolder',
+                                    color: '#fff'
+                                }
+                            },
+                            data:[{value: 0, name: 'km/h'}]
+                        },
+                        {
+                            name:'',
+                            type:'gauge',
+                            center : ['25%', '55%'],
+                            radius : '50%',
+                            min:0,
+                            max:7,
+                            endAngle:45,
+                            splitNumber:7,
+                            axisLine: {
+                                lineStyle: {
+                                    color: [[0.29, 'lime'],[0.86, '#1e90ff'],[1, '#ff4500']],
+                                    width: 2,
+                                    shadowColor : '#fff',
+                                    shadowBlur: 10
+                                }
+                            },
+                            axisLabel: {
+                                textStyle: {
+                                    fontWeight: 'bolder',
+                                    color: '#fff',
+                                    shadowColor : '#fff',
+                                    shadowBlur: 10
+                                }
+                            },
+                            axisTick: {
+                                length :12,
+                                lineStyle: {
+                                    color: 'auto',
+                                    shadowColor : '#fff',
+                                    shadowBlur: 10
+                                }
+                            },
+                            splitLine: {
+                                length :20,
+                                lineStyle: {
+                                    width:3,
+                                    color: '#fff',
+                                    shadowColor : '#fff',
+                                    shadowBlur: 10
+                                }
+                            },
+                            pointer: {
+                                width:5,
+                                shadowColor : '#fff',
+                                shadowBlur: 5
+                            },
+                            title : {
+                                offsetCenter: [0, '-30%'],
+                                textStyle: {
+                                    fontWeight: 'bolder',
+                                    fontStyle: 'italic',
+                                    color: '#fff',
+                                    shadowColor : '#fff',
+                                    shadowBlur: 10
+                                }
+                            },
+                            detail : {
+                                //backgroundColor: 'rgba(30,144,255,0.8)',
+                                // borderWidth: 1,
+                                borderColor: '#fff',
+                                shadowColor : '#fff',
+                                shadowBlur: 5,
+                                width: 80,
+                                height:30,
+                                offsetCenter: [25, '20%'],
+                                textStyle: {
+                                    fontWeight: 'bolder',
+                                    color: '#fff'
+                                }
+                            },
+                            data:[{value: 0, name: 'x1000 r/min'}]
+                        },
+                        {
+                            name:'',
+                            type:'gauge',
+                            center : ['75%', '50%'],
+                            radius : '50%',
+                            min:0,
+                            max:2,
+                            startAngle:135,
+                            endAngle:45,
+                            splitNumber:2,
+                            axisLine: {
+                                lineStyle: {
+                                    color: [[0.2, 'lime'],[0.8, '#1e90ff'],[1, '#ff4500']],
+                                    width: 2,
+                                    shadowColor : '#fff',
+                                    shadowBlur: 10
+                                }
+                            },
+                            axisTick: {
+                                length :12,
+                                lineStyle: {
+                                    color: 'auto',
+                                    shadowColor : '#fff',
+                                    shadowBlur: 10
+                                }
+                            },
+                            axisLabel: {
+                                textStyle: {
+                                    fontWeight: 'bolder',
+                                    color: '#fff',
+                                    shadowColor : '#fff',
+                                    shadowBlur: 10
+                                },
+                                formatter:function(v){
+                                    switch (v + '') {
+                                        case '0' : return 'F';
+                                        case '1' : return 'Carb';
+                                        case '2' : return 'E';
+                                    }
+                                }
+                            },
+                            splitLine: {
+                                length :15,
+                                lineStyle: {
+                                    width:3,
+                                    color: '#fff',
+                                    shadowColor : '#fff',
+                                    shadowBlur: 10
+                                }
+                            },
+                            pointer: {
+                                width:2,
+                                shadowColor : '#fff',
+                                shadowBlur: 5
+                            },
+                            title : {
+                                show: false
+                            },
+                            detail : {
+                                show: false
+                            },
+                            data:[{value: 0, name: 'carb'}]
+                        },
+                        {
+                            name:'',
+                            type:'gauge',
+                            center : ['75%', '50%'],
+                            radius : '50%',
+                            min:0,
+                            max:2,
+                            startAngle:315,
+                            endAngle:225,
+                            splitNumber:2,
+                            axisLine: {
+                                lineStyle: {
+                                    color: [[0.2, 'lime'],[0.8, '#1e90ff'],[1, '#ff4500']],
+                                    width: 2,
+                                    shadowColor : '#fff',
+                                    shadowBlur: 10
+                                }
+                            },
+                            axisTick: {
+                                show: false
+                            },
+                            axisLabel: {
+                                textStyle: {
+                                    fontWeight: 'bolder',
+                                    color: '#fff',
+                                    shadowColor : '#fff',
+                                    shadowBlur: 10
+                                },
+                                formatter:function(v){
+                                    switch (v + '') {
+                                        case '0' : return 'C';
+                                        case '1' : return 'Eau';
+                                        case '2' : return 'H';
+                                    }
+                                }
+                            },
+                            splitLine: {
+                                length :15,
+                                lineStyle: {
+                                    width:3,
+                                    color: '#fff',
+                                    shadowColor : '#fff',
+                                    shadowBlur: 10
+                                }
+                            },
+                            pointer: {
+                                width:2,
+                                shadowColor : '#fff',
+                                shadowBlur: 5
+                            },
+                            title : {
+                                show: false
+                            },
+                            detail : {
+                                show: false
+                            },
+                            data:[{value: 0, name: 'carb'}]
+                        }
+                    ]
+
+                }
+
+                var myIntervalFunction = function() {
+                    cancelRefresh = $timeout(function myFunction() {
+                        $scope.$apply(function () {
+
+                            $.ajax({
+                                url: '/rest/positions/findTopByVehicule_IdOrderByDateDesc?idVehicule='+i.vehicule.id,
+                                cache: false,
+                                async: false,
+                                success: function (data) {
+                                    if(data.vitesse != undefined)
+                                    {
+                                        console.log(data);
+                                        if(new Date().getTime() - data.date > 5000 || data.vitesse < 1)
+                                        {
+                                            i.compteur.option.series[0].data[0].value = 0;//vitesse
+                                            i.class = "mdi-av-stop red-text";
+                                            if(i.map != undefined)
+                                                delete i.vitesse;
+                                        }else {
+                                            i.compteur.option.series[0].data[0].value = data.vitesse;//vitesse
+                                            i.ancienneVitesse = data.vitesse;
+                                            i.class = "mdi-av-play-circle-fill green-text";
+
+                                            if(i.map != undefined)
+                                                i.vitesse = data.vitesse;
+                                        }
+                                    }
+
+                                }
+                            });
+
+                        });
+
+                        i.compteur.setOption(i.compteur.option,true);
+                        cancelRefresh = $timeout(myIntervalFunction, 800);
+                    },800);
+                };
+                myIntervalFunction();
+
+
+            }
+
+            function load(i){
+                i.map = new GMaps({
+                    div: '#'+ i.vehicule.matricule,
+                    lat: 31.630758,
+                    lng: -8.062641,
+                    width: '100%',
+                    height: '100%',
+                    zoom:17,
+
+                });
+                $scope.loadMarkers(i);
+            }
+
+            $scope.chargerMaps = function(i)
+            {
+                $("#"+ i.vehicule.matricule).css({"display":"block"});
+                load(i);
+                $(window).trigger('resize');
+            }
+            $scope.circles = [];
+
+            $scope.loadMarkers = function(a)
+            {
+                $scope.markers = [];
+               /* for (var i = 0; i < $scope.circles.length; i++) {
+                    $scope.circles[i].setMap(null);
+                }*/
+                //$scope.circles = [];
+                $scope.markers = lookupFactory.getAll("pointInterets");
+                for(var i = 0;i<$scope.markers.length; i++)
+                {
+                    var m = $scope.markers[i];
+                    a.map.addMarker({
+                        lat: m.latitude,
+                        lng: m.longitude,
+                        title: m.nom,
+                        icon: m.icon.path,
+                        infoWindow : {
+                            content : '<div class="marker"><img src="'+m.icon.path+'"/><div class="titre">'+
+                            m.nom+'</div><div class="adresse">' +
+                            '<span><b>Adresse :</b> </span>'+m.adresse+'</div>'+
+                            '</div>',
+                            click: function (e) {
+                                // alert('teest');
+                            }
+                        }});
+
+                    circle = a.map.drawCircle({
+                        lat: m.latitude,
+                        lng: m.longitude,
+                        radius: m.rayon,
+                        strokeColor: '#BBD8E9',
+                        strokeOpacity: 1,
+                        strokeWeight: 3,
+                        fillColor: '#BBD8E9',
+                        editable:false,
+
+                    });
+                    $scope.circles.push(circle);
+//                    circle.bindTo('center', m, 'position');
+                }
+
+            }
+        }]);
+        angular.bootstrap(document, ['AdminModule']);
+
+
+    });
+
+
+</script>
+</div>
+</html>
+
+
+

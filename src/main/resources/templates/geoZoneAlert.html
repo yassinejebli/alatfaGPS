@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      th:include="fragments/layout :: page">
+<head>
+    <title></title>
+</head>
+<body>
+<div th:fragment="content">
+    <div class="row">
+        <div class="col-lg-4">
+            <label>Recherche par adresse</label>
+            <input ng-model="adresse" ng-enter="rechercherAdresse()" type="text" placeholder="Adresse" class="validate"/>
+        </div>
+        <div class="col-lg-2 col-lg-offset-0">
+            <a ng-click="rechercherAdresse()" class="btn-floating waves-effect waves-light cyan" style="margin-top:20px;"><i class="mdi-action-search"></i></a>
+        </div>
+
+    </div>
+    <div class="row">
+        <div id="map"></div>
+    </div>
+    <div class="row">
+    <div style="height:400px !important;" ui-grid-pagination ui-grid-selection  ui-grid-auto-resize ui-grid-move-columns ui-grid="gridOptions" ui-grid-resize-columns ui-grid-edit ui-grid-cellnav class="grid"></div>
+    </div>
+
+</div>
+</body>
+<div th:fragment="script">
+<script>
+
+    $(document).ready(function () {
+
+
+        app.controller("AdminCtrl", ['$scope', '$element', 'Animations', 'uiGridConstants', '$timeout', '$interval', '$attrs', 'crudGridDataFactory', 'notificationFactory', 'lookupFactory', function ($scope, $element, Animations, uiGridConstants, $timeout, $interval, $attrs, crudGridDataFactory, notificationFactory, lookupFactory) {
+            $scope.table = "geoZoneAlerts";
+            $scope.limit = "/icons/accesdenied.png";
+            $scope.lookupFactory = lookupFactory;
+            //alatfa 31.630758,-8.062641
+            var map = new GMaps({
+                div: '#map',
+                lat: 31.630758,
+                lng: -8.062641,
+                width: '*',
+                height: '300px',
+                zoom:17,
+
+            });
+
+            $scope.rechercherAdresse=function()
+            {
+                if($scope.adresse == "" || $scope.adresse == undefined)
+                {
+                    notificationFactory.warning("Entrez une adresse","Attention");
+                    return;
+                }
+
+                GMaps.geocode({
+                    address: $scope.adresse,
+                    callback: function(results, status) {
+                        if (status == 'OK') {
+                            var latlng = results[0].geometry.location;
+                            map.setCenter(latlng.lat(), latlng.lng());
+                            /*map.addMarker({
+                                lat: latlng.lat(),
+                                lng: latlng.lng()
+                            });*/
+                        }
+                    }
+                });
+            }
+
+            map.setContextMenu({
+                control: 'map',
+                options: [{
+                    title: 'Ajouter une zone d\'alerte',
+                    name: 'geoZoneAlert',
+                    action: function(e) {
+                        this.addMarker({
+                            lat: e.latLng.lat(),
+                            lng: e.latLng.lng(),
+                            icon:$scope.limit,
+                            title: $scope.item.nom,
+                            infoWindow : {content : '<div class="marker"><img src="'+$scope.limit+'"/><div class="titre">'+$scope.item.nom+'</div>'+
+                            '</div>'}
+                        });
+                        //
+                        $scope.item.latitude = e.latLng.lat();
+                        $scope.item.longitude = e.latLng.lng();
+                        console.log(e);
+                        $scope.$apply();
+                    }
+                },
+                ]
+            });
+            $scope.circles = [];
+
+            $scope.loadMarkers = function()
+            {
+                $scope.markers = [];
+                for (var i = 0; i < $scope.circles.length; i++) {
+                    $scope.circles[i].setMap(null);
+                }
+                $scope.circles = [];
+                var bounds=[];
+                map.removeMarkers();
+                $scope.markers = lookupFactory.getAll("geoZoneAlerts");
+                for(var i = 0;i<$scope.markers.length; i++)
+                {
+                    /*div class="marker"><img src="'+m.icon.path+'"/><div class="titre">'+
+                    m.nom+'</div><div class="adresse">' +
+                    '<span><b>Adresse :</b> </span>'+m.adresse+'</div>'+
+                    '</div>',*/
+                    var m = $scope.markers[i];
+                    map.addMarker({
+                        lat: m.latitude,
+                        lng: m.longitude,
+                        title: m.nom,
+                        icon:$scope.limit,
+                        infoWindow : {
+                            content : '<div class="marker"><img src="'+$scope.limit+'"/><div class="titre">'+
+                            m.nom+'</div>' +
+                            '<div class="adresse">'+
+                            '<span><b>Vehicule :</b> </span>'+m.vehicule.intitule+'</div>'+
+                            '<div class="adresse">'+
+                            '<span><b>Chauffeur :</b> </span>'+m.vehicule.chauffeur.name+'</div>'+
+                            '</div>',
+                            click: function (e) {
+                                 alert('teest');
+                            }
+                        }});
+                    var latlng = new google.maps.LatLng(m.latitude, m.longitude);//auto zooooooooom
+                    bounds.push(latlng);
+
+                    circle = map.drawCircle({
+                        lat: m.latitude,
+                        lng: m.longitude,
+                        radius: m.rayon,
+                        strokeColor: 'red',
+                        strokeOpacity: 1,
+                        strokeWeight: 3,
+                        fillColor: 'green',
+                        editable:true,
+                    });
+                    $scope.circles.push(circle);
+//                    circle.bindTo('center', m, 'position');
+                }
+                map.fitLatLngBounds(bounds);
+
+            }
+
+            $scope.loadMarkers();
+            $scope.filterOptions = {
+                filterText: "",
+                filterVisible: null,
+                useExternalFilter: true
+            };
+            //$scope.pagingOptions = {
+            //    pageSizes: [5, 10, 30],
+            //    pageSize: 5,
+            //    totalServerItems: 0,
+            //    currentPage: 1
+            //};
+            $scope.deleteMode = false;
+
+            $scope.onDblClickRow = function (rowItem) {
+                console.log("dbClick")
+            };
+            $scope.gridOptions = {
+                showColumnFooter: true,
+                enableRowSelection: true,
+                enableRowHeaderSelection: false,
+                showGridFooter: true,
+                rowHeight: 40,
+                enableFiltering: false,
+                //paginationPageSizes: [5, 10, 30],
+                //paginationPageSize: 5,
+                enableVerticalScrollbar: uiGridConstants.scrollbars.WHEN_NEEDED,
+                enableColumnResizing: true,
+            };
+
+
+            $scope.gridOptions.multiSelect = false;
+            $scope.gridOptions.modifierKeysToMultiSelect = false;
+            $scope.gridOptions.noUnselect = true;
+            $scope.items = [];
+            var headerTemplateAdd = '<a style="margin-left:15px !important;" ng-click="grid.appScope.update($event, row.entity)"class="btn-floating btn-flat waves-effect waves-light red accent-2 btnGrid"><i class="mdi-editor-vertical-align-bottom"></i></a>';
+            var headerTemplateDelete = '<a style="margin-left:15px !important;"  ng-click="grid.appScope.delete($event, row.entity)" class="btn-floating btnGrid waves-effect btn-flat waves-effect waves-light waves-light red"><i class="mdi-action-delete""></i></a>';
+            $scope.gridOptions.columnDefs = [
+                { enableCellEdit: false, width: "76", allowCellFocus: false, headerCellTemplate: '<button class="btn cyan btn-xs btn-block" ng-click="grid.appScope.addNew()"><span class="icon-plus"></span></button>', name: ' ', cellTemplate: headerTemplateAdd, sortable: false },
+                { name: 'nom', displayName: 'Nom', width: "*", resizable: true },
+                { name: 'latitude', displayName: 'Latitude', width: "*", resizable: true,type:"number"},
+                { name: 'longitude', displayName: 'Longitude', width: "*", resizable: true,type:"number"},
+                { name: 'rayon',cellFilter:"number:2", displayName: 'Rayon (mètre)', width: "*", resizable: true,type:"number"},
+                { name: 'vehicule.intitule',displayName:'Vehicule', editableCellTemplate: lookupVehiculeCellEditTemplate,},
+                { name: 'active', displayName: 'Activé', width: "*",type:'boolean',cellTemplate : '<input type="checkbox" ng-change="grid.appScope.update($event,row.entity)" ng-model="row.entity.active">'},
+                { enableCellEdit: false, width: "76", name: '\'', allowCellFocus: false, headerCellTemplate: '<button class="btn cyan btn-xs btn-block" ng-click="grid.appScope.toggleFiltering()"><span class="icon-filter"></span></button>', cellTemplate: headerTemplateDelete, sortable: false },
+
+            ];
+
+
+            $scope.getPagedDataAsync = function () {
+                crudGridDataFactory($scope.table, '').query(itemsQuerySucceeded, queryFailed);
+            };
+            $scope.getPagedDataAsync();
+
+            $scope.gridOptions.onRegisterApi = function (gridApi) {
+                $scope.gridApi = gridApi;
+
+                gridApi.grid.registerRowBuilder(function (row, gridOptions) {
+                    row.isNew = true;
+                });
+                gridApi.cellNav.on.navigate($scope, function (newRowCol, oldRowCol) {
+                    $scope.gridApi.selection.selectRow(newRowCol.row.entity);
+                });
+                gridApi.selection.on.rowSelectionChanged($scope,function(row){
+                    $scope.item = row.entity;
+                    console.log($scope.item);
+                    if($scope.item.latitude == "" || $scope.item.longitude == "" || $scope.item.longitude == undefined || $scope.item.latitude == "")
+                            return;
+                    map.setCenter($scope.item.latitude, $scope.item.longitude);
+                });
+            }
+            $scope.selectRow = function () {
+                return $scope.gridApi.selection.getSelectedRows();
+            };
+
+            $scope.toggleFiltering = function () {
+                $scope.gridOptions.enableFiltering = !$scope.gridOptions.enableFiltering;
+                $scope.gridApi.core.notifyDataChange(uiGridConstants.dataChange.COLUMN);
+                //$scope.gridApi.core.notifyDataChange($scope.gridApi.grid, uiGridConstants.dataChange.ALL);
+
+            };
+
+            $scope.addNew = function () {
+                $scope.addMode = true;
+                $scope.item = new Object();
+                $scope.items.unshift($scope.item);
+            }
+
+            $scope.update = function (e, item) {
+
+                if (item.id == null) {
+                    item.id = breeze.core.getUuid();
+                    crudGridDataFactory($scope.table).save(item, saveSucceeded, saveFailed);
+
+                }
+                else {
+                    crudGridDataFactory($scope.table).update(item, saveSucceeded, saveFailed);
+                }
+            }
+
+
+            $scope.delete = function (e, item) {
+                //console.log(item)
+                if (confirm("Voulez-vous supprimer cet enregistrement ?")) {
+
+                    if (item.id != null) {
+                        $scope.deleteMode = true;
+                        crudGridDataFactory($scope.table).remove({ key: item.id }, item, saveSucceeded, saveFailed);
+                        $scope.gridOptions.data.splice($scope.gridOptions.data.indexOf(item), 1);
+
+                    } else {
+                        $scope.gridOptions.data.splice($scope.gridOptions.data.indexOf(item), 1);
+
+                    }
+                }
+
+            }
+
+            /*region generique*/
+            function queryFailed(error) {
+                notificationFactory.error(error.message, "Query failed");
+            }
+
+            function itemsQuerySucceeded(data) {
+                $scope.items = data;
+                $scope.gridOptions.data = $scope.items;
+
+                //$scope.totalServerItems = data["odata.count"];
+                //if ($scope.items.length > 0) {
+                //    if ($scope.item) {
+                //        for (i = 0; i < $scope.items.length; i++) {
+                //            if ($scope.items[i].id == $scope.item.id)
+                //                $scope.dataGrid.selectedItem = $scope.items[i];
+                //        }
+                //    }
+                //    if ($scope.dataGrid.selectedItem == null) {
+                //        $scope.dataGrid.selectedItem = $scope.items[0];
+                //    }
+
+                //    $scope.setItem($scope.dataGrid.selectedItem);
+                //}
+
+                //notificationFactory.success("Fetched " + data.value.length + " " + $scope.table);
+            }
+
+            function queryFailed(error) {
+                notificationFactory.error(error.message, "Query failed");
+            }
+
+            saveSucceeded = function (saveResult) {
+                $scope.loadMarkers();
+                notificationFactory.success();
+                //$scope.getPagedDataAsync();
+                $scope.gridApi.core.refresh();
+
+            }
+
+            saveFailed = function (error) {
+                var reason = error.statusText;
+                var detail = error.data["odata.error"];
+                if (detail) {
+                    reason += detail.innererror.message;
+                }
+                if (error.config["method"] == "POST")
+                    $scope.item.id = null; //on affecte null pour permetre d'ajouter a nouveau le meme item
+
+                notificationFactory.error(
+                        "Impossible d'enregistrer les modifications. " + reason +
+                        " Il faut actualiser la page.");
+                $scope.getPagedDataAsync();
+                /*
+                 var entityErrors = error.entityErrors;
+
+                 if (entityErrors && entityErrors.length) {
+                 handleSaveValidationError(entityErrors);
+                 return;
+                 }
+                 if (detail && detail.ExceptionType &&
+                 detail.ExceptionType.indexOf('OptimisticConcurrencyException') !== -1) {
+                 // Concurrency error
+                 reason =
+                 "Another user, perhaps the server, may have deleted one or all of the same entities.";
+                 }
+                 */
+
+            };
+            //$scope.gridOptions.data = $scope.table;
+        }]);
+        angular.bootstrap(document, ['AdminModule']);
+
+    });
+</script>
+</div>
+</html>
+
+
+

@@ -1,0 +1,165 @@
+<div th:fragment="header" >
+
+
+
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="msapplication-tap-highlight" content="no" />
+
+        <title>GPS TRACKING APP</title>
+
+        <link href="../Content/ui-grid-unstable.min.css" th:href="@{/Content/ui-grid-unstable.min.css}" rel="stylesheet" />
+        <link href="../Scripts/assets/font-awesome/css/font-awesome.css" th:href="@{/Scripts/assets/font-awesome/css/font-awesome.css}" rel="stylesheet" />
+        <!--<link href="../Content/bootstrap.css" rel="stylesheet" />-->
+        <!--<link href="../css/bootstrap.css"
+              th:href="@{/css/bootstrap.css}" rel="stylesheet" media="screen"/>-->
+        <link href="../Content/bootstrap.css"
+              th:href="@{/Content/bootstrap.css}" rel="stylesheet" media="screen"/>
+
+
+
+        <link href="../Content/css/materialize.css" type="text/css" th:href="@{/Content/css/materialize.css}" rel="stylesheet" media="screen,projection" />
+        <link href="../Content/css/style.css" type="text/css" rel="stylesheet" media="screen,projection" th:href="@{/Content/css/style.css}" />
+        <link href="../Content/css/style-fullscreen.css" type="text/css" rel="stylesheet" media="screen,projection" th:href="@{/Content/css/style-fullscreen.css}" />
+        <!-- Custome CSS-->
+        <link href="../Content/css/custom-style.css" type="text/css" rel="stylesheet" media="screen,projection" th:href="@{/Content/css/custom-style.css}" />
+        <link href="../Content/css/style-fullscreen.css" type="text/css" rel="stylesheet" media="screen,projection" th:href="@{/Content/css/style-fullscreen.css}" />
+
+        <link href="../Content/js/plugins/perfect-scrollbar/perfect-scrollbar.css" type="text/css" rel="stylesheet" media="screen,projection" th:href="@{/Content/js/plugins/perfect-scrollbar/perfect-scrollbar.css}" />
+        <link href="../Content/js/plugins/jvectormap/jquery-jvectormap.css" type="text/css" rel="stylesheet" media="screen,projection" th:href="@{/Content/js/plugins/jvectormap/jquery-jvectormap.css}" />
+        <link href="../Content/js/plugins/chartist-js/chartist.min.css" type="text/css" rel="stylesheet" media="screen,projection" th:href="@{/Content/js/plugins/chartist-js/chartist.min.css}" />
+
+
+    </head>
+
+    <body>
+    <!-- Start Page Loading -->
+    <div id="loader-wrapper">
+        <div id="loader"></div>
+        <div class="loader-section section-left"></div>
+        <div class="loader-section section-right"></div>
+    </div>
+    <!-- End Page Loading -->
+    <!-- START HEADER -->
+    <header id="header" class="page-topbar">
+        <!-- start header nav-->
+        <div class="navbar-fixed">
+            <nav class="cyan">
+                <div class="nav-wrapper">
+
+                    <ul class="left">
+                        <li class="no-hover"><a href="#" data-activates="slide-out" class="menu-sidebar-collapse btn-floating btn-flat btn-medium waves-effect waves-light cyan"><i class="mdi-navigation-menu"></i></a></li>
+
+                    </ul>
+                    <div class="header-search-wrapper hide-on-med-and-down">
+
+
+
+
+                    </div>
+                    <ul class="right hide-on-med-and-down">
+                        <li>
+                            <a href="javascript:void(0);" class="waves-effect waves-block waves-light toggle-fullscreen"><i class="mdi-action-settings-overscan"></i></a>
+                        </li>
+                        <li>
+                            <a href="javascript:void(0);" class="waves-effect waves-block waves-light"><i class="mdi-navigation-apps"></i></a>
+                        </li>
+                        <li>
+                            <a href="javascript:void(0);" class="waves-effect waves-block waves-light"><i class="mdi-social-notifications"></i></a>
+                        </li>
+                        <li>
+                            <a href="#" data-activates="chat-out" class="waves-effect waves-block waves-light chat-collapse"><i class="mdi-communication-chat"></i></a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        </div>
+        <!-- end header nav-->
+    </header>
+    <!-- END HEADER -->
+    <!-- START MAIN -->
+    <div id="main"  ng-controller="AdminCtrl" id="ctrl">
+        <!-- START WRAPPER -->
+        <div class="wrapper">
+            <!-- START LEFT SIDEBAR NAV-->
+            <aside id="left-sidebar-nav">
+                <ul id="slide-out" class="side-nav leftside-navigation">
+                    <li class="user-details cyan darken-2">
+                        <div class="row">
+                            <div class="col col s4 m4 l4">
+
+                            </div>
+                            <div class="col col s8 m8 l8">
+                                <ul id="profile-dropdown" class="dropdown-content">
+
+                                    <li>
+                                        <a href="@Url.Action("Reglage", "Administration") "><i class="mdi-action-settings"></i> Societé</a>
+                                    </li>
+                                    <li>
+                                        <a href="@Url.Action("Settings", "Administration") "><i class="mdi-action-settings"></i> Réglage</a>
+                                    </li>
+
+                                    <li class="divider"></li>
+                                    <li>
+
+
+                                        <a href="javascript:document.getElementById('logoutForm').submit()"><i class="mdi-action-lock-outline"></i> Sortir</a>
+
+                                    </li>
+                                </ul>
+                                <a class="btn-flat dropdown-button waves-effect waves-light white-text profile-btn" href="#" data-activates="profile-dropdown">TEST<i class="mdi-navigation-arrow-drop-down right"></i></a>
+                                <p class="user-roal">Utilisateur</p>
+                            </div>
+                        </div>
+                    </li>
+
+
+
+                    <li class="no-padding">
+
+                        <ul class="collapsible collapsible-accordion">
+
+                        </ul>
+                    </li>
+
+                    <li class="li-hover"><div class="divider"></div></li>
+
+
+            </aside>
+            <!-- END LEFT SIDEBAR NAV-->
+            <!-- //////////////////////////////////////////////////////////////////////////// -->
+            <!-- START CONTENT -->
+            <section id="content">
+
+                <!--breadcrumbs start-->
+                <div id="breadcrumbs-wrapper" class=" grey lighten-3">
+                    <!-- Search for small screen -->
+                    <div class="header-search-wrapper grey hide-on-large-only">
+                        <i class="mdi-action-search active"></i>
+                        <input type="text" name="Search" class="header-search-input z-depth-2" placeholder="">
+                    </div>
+                    <div class="container">
+                        <div class="row">
+                            <div class="col s12 m12 l12">
+                                <ol class="breadcrumb">
+                                    <li><a href="#">Administration</a></li>
+                                    <li class="active"></li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!--breadcrumbs end-->
+                <!--start container-->
+                <div class="container">
+                    <div class="section">
+
+
+
+
+
+                    </div>
+
+                    <div ui-grid-pagination ui-grid-selection ui-grid-auto-resize ui-grid-move-columns ui-grid="gridOptions" ui-grid-resize-columns ui-grid-edit ui-grid-cellnav class="grid"></div>

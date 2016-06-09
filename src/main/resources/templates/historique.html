@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      th:include="fragments/layout :: page">
+<head>
+    <title></title>
+</head>
+<body>
+<div th:fragment="content">
+    <div class="row">
+        <div class="col-md-2" style="margin-top:75px;">
+        <div class="row">
+        <div class="input-field ">
+            <input type="text" autocomplete="off" ng-model="vehicule" placeholder="Véhicule"
+                   typeahead="v as v.intitule for v  in lookupFactory.getBy('Vehicules', 'Intitule', $viewValue)"
+                   typeahead-wait-ms="100"
+                   class="validate" id="vehicule" />
+        </div>
+        </div>
+        <div class="row">
+
+        <div class="">
+            <label>Date début</label>
+            <input type="date"  ng-model="dateDebut">
+        </div>
+        </div>
+        <div class="row">
+            <div class="">
+                <label>Date fin</label>
+                <input type="date"  ng-model="dateFin">
+            </div>
+        </div>
+            <div class="row">
+                <a class="waves-effect waves-light  btn cyan" style="width:100%;text-decoration: none;color:white;" ng-click="rechercher()">Valider</a>
+            </div>
+            <div class="row">
+                <a class="waves-effect waves-light  btn red" style="margin-top:10px;width:100%;text-decoration: none;color:white;" ng-click="rapport()">Rapport</a>
+
+            </div>
+        </div>
+
+        <div class="col-md-10">
+            <div class="row">
+            <div class="col-lg-4">
+                <label>Recherche par adresse</label>
+                <input ng-model="adresse" ng-enter="rechercherAdresse()" type="text" placeholder="Adresse" class="validate"/>
+            </div>
+            <div class="col-lg-2 col-lg-offset-0">
+                <a ng-click="rechercherAdresse()" class="btn-floating waves-effect waves-light cyan" style="margin-top:20px;"><i class="mdi-action-search"></i></a>
+            </div>
+            </div>
+            <div class="row">
+            <div id="map"></div>
+            </div>
+            <div class="row" ng-hide="true" id="instructions">
+
+            </div>
+            <div class="row" ng-hide="result.length == 0">
+                <div class="move-up">
+                    <div>
+                           <span class="chart-title black-text" >
+                                                Vitesse (Km/h)
+                           </span>
+                    </div>
+                    <div class="trending-line-chart-wrapper" id="graph-container">
+                        <!--<canvas id="myChart" style="width: 824px; height: 192px;" height="192" width="824"></canvas>-->
+                            <div id="placeholder" class="demo-placeholder" style="height: 200px;width: 100%;"></div>
+
+                            <div id="overview" class="demo-placeholder" style="height: 200px;width: 100%;"></div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+</div>
+</body>
+<div th:fragment="script">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/jquery.flot.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/jquery.flot.time.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/jquery.flot.selection.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/jquery.flot.resize.min.js"></script>
+<script>
+
+    $(document).ready(function () {
+
+
+        app.controller("AdminCtrl", ['$filter','$scope', '$element', 'Animations', 'uiGridConstants', '$timeout', '$interval', '$attrs', 'crudGridDataFactory', 'notificationFactory', 'lookupFactory', function ($filter,$scope, $element, Animations, uiGridConstants, $timeout, $interval, $attrs, crudGridDataFactory, notificationFactory, lookupFactory) {
+            //alatfa 31.630758,-8.062641
+            $scope.result = [];
+            $scope.flagDebut = "/icons/start.png";
+            $scope.flagFin = "/icons/end.png";
+            $scope.lookupFactory = lookupFactory;
+            var map = new GMaps({
+                div: '#map',
+                lat: 31.630758,
+                lng: -8.062641,
+                width: '*',
+                height: '500px',
+            });
+
+            $scope.circles = [];
+
+            $scope.loadMarkers = function()
+            {
+                $scope.markers = [];
+                for (var i = 0; i < $scope.circles.length; i++) {
+                    $scope.circles[i].setMap(null);
+                }
+                $scope.circles = [];
+                map.removeMarkers();
+                $scope.markers = lookupFactory.getAll("pointInterets");
+                for(var i = 0;i<$scope.markers.length; i++)
+                {
+                    var m = $scope.markers[i];
+                    map.addMarker({
+                        lat: m.latitude,
+                        lng: m.longitude,
+                        title: m.nom,
+                        icon: m.icon.path,
+                        infoWindow : {
+                            content : '<div class="marker"><img src="'+m.icon.path+'"/><div class="titre">'+
+                            m.nom+'</div>' +
+                            '<div class="adresse"><b>Adresse : </b>'+m.adresse+'</div>' +
+                            '<div class="adresse"><b>Latitude : </b>'+m.latitude+'</div>' +
+                            '<div class="adresse"><b>Longitude : </b>'+m.longitude+'</div>' +
+                            '</div>',
+                            click: function (e) {
+                                // alert('teest');
+                            }
+                        }});
+
+                    circle = map.drawCircle({
+                        lat: m.latitude,
+                        lng: m.longitude,
+                        radius: m.rayon,
+                        strokeColor: '#BBD8E9',
+                        strokeOpacity: 1,
+                        strokeWeight: 3,
+                        fillColor: '#BBD8E9',
+                        editable:true,
+
+                    });
+                    $scope.circles.push(circle);
+//                    circle.bindTo('center', m, 'position');
+                }
+
+            }
+            $scope.loadMarkers();
+
+            $scope.rechercherAdresse=function()
+            {
+                if($scope.adresse == "" || $scope.adresse == undefined)
+                {
+                    notificationFactory.warning("Entrez une adresse","Attention");
+                    return;
+                }
+
+                GMaps.geocode({
+                    address: $scope.adresse,
+                    callback: function(results, status) {
+                        if (status == 'OK') {
+                            var latlng = results[0].geometry.location;
+                            map.setCenter(latlng.lat(), latlng.lng());
+                        }
+                    }
+                });
+            }
+
+
+            $scope.rechercher = function()
+            {
+                if(typeof $scope.vehicule !== "object")
+                {
+                    notificationFactory.warning("Sélectionnez un véhicule!","Attention");
+                    return;
+                }
+
+                if($scope.dateDebut == undefined || $scope.dateFin == undefined)
+                {
+                    notificationFactory.warning("Remplissez les dates : début et fin !","Attention");
+                    return;
+                }
+
+                $.ajax({
+                    url: "/Positions/search/findByVehicule_IdAndDateBetween?idVehicule="+$scope.vehicule.id+"&dateDebut="+convertDate($scope.dateDebut)+"&dateFin="+convertDate($scope.dateFin)+"&sort=date",//PositionRepository
+                    cache: false,
+                    async: false,
+                    success: function (data) {
+                        $scope.loadMarkers();
+                        result = data._embedded["Positions"];
+                        $scope.result = result;
+                        console.log(result);
+                        var path = [];
+                        var bounds = [];
+                        map.removeMarkers();
+                        map.removePolylines();
+                        $scope.loadMarkers();
+                        for(var i= 0;i<result.length;i++)
+                        {
+                            var r = result[i];
+                            if(i == 0){
+
+                                map.addMarker({
+                                    lat: r.latitude,
+                                    lng: r.longitude,
+                                    icon : $scope.flagDebut,
+                                    infoWindow : {
+                                        content : '<div class="marker"><img src="'+$scope.flagDebut+'"/><div class="titre">Début</div><div class="adresse">' +
+                                        '<span><b>Latitude :</b> </span>'+r.latitude+'</div><div class="adresse">' +
+                                        '<span><b>Longitude :</b> </span>'+r.longitude+'</div><div class="adresse">' +
+                                        '<span><b>Date :</b> </span>'+$filter("date")(r.date,"dd/MM/yyyy HH:mm:ss")+'</div>'+
+                                        '</div>',
+                                        click: function (e) {
+                                            // alert('teest');
+                                        }
+                                    }});
+                            }
+                            path.push([r.latitude, r.longitude]);
+                            var latlng = new google.maps.LatLng(r.latitude, r.longitude);//auto zooooooooom
+                            bounds.push(latlng);
+
+                            if(i == result.length - 1)
+                            {
+                                map.setCenter(r.latitude, r.longitude);
+
+                                map.addMarker({
+                                    lat: r.latitude,
+                                    lng: r.longitude,
+                                    icon : $scope.flagFin,
+                                    infoWindow : {
+                                        content : '<div class="marker"><img src="'+$scope.flagFin+'"/><div class="titre">Fin</div><div class="adresse">' +
+                                        '<span><b>Latitude :</b> </span>'+r.latitude+'</div><div class="adresse">' +
+                                        '<span><b>Longitude :</b> </span>'+r.longitude+'</div><div class="adresse">' +
+                                        '<span><b>Date :</b> </span>'+$filter("date")(r.date,"dd/MM/yyyy HH:mm:ss")+'</div>'+
+                                        '</div>',
+                                        click: function (e) {
+                                            // alert('teest');
+                                        }
+                                    }});
+
+                            }
+                        }
+
+
+                        if(result.length >= 2) {
+                            map.fitLatLngBounds(bounds);
+                                    map.drawPolyline({
+                                        path: path,
+                                        strokeColor: 'red',
+                                        strokeOpacity: 0.6,
+                                        strokeWeight: 6,
+
+                                    });
+
+
+
+                            var distance = 0;
+                            //console.log(getDistance(origin,destination));
+                            for(var i=0;i<path.length;i++)
+                            {
+                                if(i+1 < path.length) {
+                                    var origin = new Object({lat: path[i][0], lng: path[i][1]});
+                                    var destination = new Object({
+                                        lat: path[i + 1][0],
+                                        lng: path[i + 1][1]
+                                    });
+
+                                    distance += getDistance(origin, destination);
+                                }
+
+                            }
+                            notificationFactory.info("<b style='color:cyan;'>" + distance.toFixed(2) + "</b> Mètres", "Distance parcourue : ");
+                            $scope.rapport();
+                        }else
+                        {
+                            notificationFactory.warning("il n'ya aucun enregistrement dans cette période !","Attention");
+                        }
+                    }
+                });
+            }
+
+
+            $scope.dateDebut = new Date("05/10/2016");
+            $scope.dateFin = new Date("05/12/2016");
+
+            ///////////////////////////////////Chart
+            $scope.rapport = function()
+            {
+                var d = [];
+
+                for(var i = 0;i<$scope.result.length;i++)
+                {
+                    var vitesse = $scope.result[i].vitesse;
+                    var date = new Date($scope.result[i].date).getTime();
+                    //console.log(date);
+                    d.push([date,vitesse]);
+                }
+                //var d = [[1196463600000, 0], [1196550000000, 5]];
+
+                // first correct the timestamps - they are recorded as the daily
+                // midnights in UTC+0100, but Flot always displays dates in UTC
+                // so we have to add one hour to hit the midnights in the plot
+
+                for (var i = 0; i < d.length; ++i) {
+                    d[i][0] += 60 * 60 * 1000;
+                }
+
+                // helper for returning the weekends in a period
+
+                function weekendAreas(axes) {
+
+                    var markings = [],
+                            d = new Date(axes.xaxis.min);
+
+                    // go to the first Saturday
+
+                    d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 1) % 7))
+                    d.setUTCSeconds(0);
+                    d.setUTCMinutes(0);
+                    d.setUTCHours(0);
+
+                    var i = d.getTime();
+
+                    // when we don't set yaxis, the rectangle automatically
+                    // extends to infinity upwards and downwards
+
+                    do {
+                        markings.push({ xaxis: { from: i, to: i + 2 * 24 * 60 * 60 * 1000 } });
+                        i += 7 * 24 * 60 * 60 * 1000;
+                    } while (i < axes.xaxis.max);
+
+                    return markings;
+                }
+
+                var options = {
+                    xaxis: {
+                        mode: "time",
+                        tickLength: 5
+                    },
+                    selection: {
+                        mode: "x"
+                    },
+                    grid: {
+                        markings: weekendAreas
+                    }
+                };
+
+                var plot = $.plot("#placeholder", [d], options);
+
+                var overview = $.plot("#overview", [d], {
+                    series: {
+                        lines: {
+                            show: true,
+                            lineWidth: 1
+                        },
+                        shadowSize: 0
+                    },
+                    xaxis: {
+                        ticks: [],
+                        mode: "time"
+                    },
+                    yaxis: {
+                        ticks: [],
+                        min: 0,
+                        autoscaleMargin: 0.1
+                    },
+                    selection: {
+                        mode: "x"
+                    }
+                });
+
+                // now connect the two
+
+                $("#placeholder").bind("plotselected", function (event, ranges) {
+
+                    // do the zooming
+                    $.each(plot.getXAxes(), function(_, axis) {
+                        var opts = axis.options;
+                        opts.min = ranges.xaxis.from;
+                        opts.max = ranges.xaxis.to;
+                    });
+                    plot.setupGrid();
+                    plot.draw();
+                    plot.clearSelection();
+
+                    // don't fire event on the overview to prevent eternal loop
+
+                    overview.setSelection(ranges, true);
+                });
+
+                $("#overview").bind("plotselected", function (event, ranges) {
+                    plot.setSelection(ranges);
+                });
+
+                // Add the Flot version string to the footer
+
+                $("#footer").prepend("Flot " + $.plot.version + " &ndash; ");
+            }
+
+
+        }]);
+        angular.bootstrap(document, ['AdminModule']);
+
+    });
+</script>
+</div>
+</html>
+
+
+

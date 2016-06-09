@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      th:include="fragments/layout :: page">
+<head>
+    <title>Administration</title>
+</head>
+<body>
+<div th:fragment="content">
+
+
+
+    <div id="main">
+        <!-- START WRAPPER -->
+        <div class="wrapper">
+
+
+            <!-- //////////////////////////////////////////////////////////////////////////// -->
+            <!-- START CONTENT -->
+            <section id="content">
+
+                <!--start container-->
+                <div class="container">
+
+                    <!--chart dashboard start-->
+                    <div id="chart-dashboard">
+                        <div class="row">
+                            <div class="col s12 m8 l8">
+                                <div class="card">
+                                    <div class="card-move-up waves-effect waves-block waves-light">
+                                        <div class="move-up cyan darken-1">
+                                            <div>
+                                            <span class="chart-title white-text">
+                                                Missions / Mois (<span type="text" th:text="${#dates.year(#dates.createNow())}"></span>)
+
+                                            </span>
+
+                                            </div>
+                                            <div class="trending-line-chart-wrapper" id="graph-container">
+                                                <canvas id="myChartCaisse" style="width: 824px; height: 192px;" height="192" width="824"></canvas>
+                                            </div>
+                                        </div>
+                                        <div class="card-content">
+                                            <a class="btn-floating btn-move-up waves-effect waves-light darken-2 right"><i class="mdi-content-add activator"></i></a>
+
+                                        </div>
+                                    </div>
+
+
+                                    <div class="card-reveal">
+                                        <span class="card-title grey-text text-darken-4">Missions accomplies aujourd'hui <i class="mdi-navigation-close right"></i></span>
+                                        <table class="responsive-table">
+                                            <thead>
+                                            <tr>
+                                                <th data-field="id">Intitulé</th>
+                                                <th data-field="month">Véhicule</th>
+                                                <th data-field="total-profit">Date départ</th>
+                                                <th data-field="total-profit">Point départ</th>
+                                                <th data-field="total-profit">Date d'arrivée</th>
+                                                <th data-field="total-profit">Point d'arrivée</th>
+                                                <th data-field="total-profit">Kilométrage estimé</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            <tr ng-repeat="i in missionsAccomplie">
+                                                <td>{{i.name}}</td>
+                                            </tr>
+
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+
+                                </div>
+                            </div>
+
+                            <div class="col s12 m4 l4">
+                                <div class="card">
+                                    <div class="card-move-up  cyan darken-3 waves-effect waves-block waves-light darken-2">
+                                        <div class=" move-up">
+                                            <p class="margin white-text">Kilométrage par véhicule</p>
+                                            <canvas id="myChart" ></canvas>
+                                        </div>
+                                    </div>
+
+                                    <div class="card-reveal">
+                                        <span class="card-title grey-text text-darken-4">Kilométrage par véhicule <i class="mdi-navigation-close right"></i></span>
+                                        <table class="responsive-table">
+                                            <thead>
+                                            <tr>
+
+                                                <th data-field="item-sold">Véhicule</th>
+                                                <th data-field="total-profit">Kilométrage</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            <tr ng-repeat="i in getSoldeAllClients">
+                                                <td>{{i.Key.Name}}</td>
+                                                <td>{{i.Sum.toFixed(2)}} DH</td>
+                                            </tr>
+
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="card-stats">
+                        <div class="row">
+                            <div class="col s12 m6 l3">
+                                <div class="card">
+                                    <div class="card-content  green white-text">
+                                        <p class="card-stats-title"><i class="mdi-social-group-add"></i> Nombre de missions achevées </p>
+                                        <h4 class="card-stats-number">{{nbrMissionAcheve}}</h4>
+                                        <p class="card-stats-compare">
+                                            <i class="mdi-hardware-keyboard-arrow-up"></i> <span class="green-text text-lighten-5"></span>
+                                        </p>
+                                    </div>
+                                    <div class="card-action  green darken-2">
+                                        <div id="clients-bar"><canvas width="290" height="25" style="display: inline-block; width: 290px; height: 25px; vertical-align: top;"></canvas></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col s12 m6 l3">
+                                <div class="card">
+                                    <div class="card-content blue darken-1 white-text">
+                                        <p class="card-stats-title"><i class="mdi-action-trending-up"></i> Nombre de missions inachevées</p>
+                                        <h4 class="card-stats-number">{{nbrMissionInAcheve}} </h4>
+                                        <p class="card-stats-compare">
+                                            <i class="mdi-hardware-keyboard-arrow-up"></i><span class="blue-grey-text text-lighten-5"></span>
+                                        </p>
+                                    </div>
+                                    <div class="card-action blue darken-2">
+                                        <div id="invoice-line"><canvas width="282" height="25" style="display: inline-block; width: 282px; height: 25px; vertical-align: top;"></canvas></div>
+
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col s12 m6 l3">
+                                <div class="card">
+                                    <div class="card-content purple white-text">
+                                        <p class="card-stats-title"><i class="mdi-maps-local-shipping"></i>Nombre de véhicules</p>
+                                        <h4 class="card-stats-number">{{nbrVehicules}}</h4>
+                                        <p class="card-stats-compare">
+                                            <i class="mdi-hardware-keyboard-arrow-up"></i> <span class="purple-text text-lighten-5"></span>
+                                        </p>
+                                    </div>
+                                    <div class="card-action purple darken-2">
+                                        <div id="sales-compositebar"><canvas id="" width="286" height="25" style="display: inline-block; width: 286px; height: 25px; vertical-align: top;"></canvas></div>
+
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col s12 m6 l3">
+                                <div class="card">
+                                    <div class="card-content pink lighten-2 white-text">
+                                        <p class="card-stats-title"><i class="mdi-social-person"></i> Nombre des chauffeurs</p>
+                                        <h4 class="card-stats-number">{{nbrChauffeurs}}</h4>
+                                        <p class="card-stats-compare">
+                                            <i class="mdi-hardware-keyboard-arrow-down"></i> <span class="deep-purple-text text-lighten-5"></span>
+                                        </p>
+                                    </div>
+                                    <div class="card-action  pink darken-2">
+                                        <div id="profit-tristate"><canvas width="290" height="25" style="display: inline-block; width: 290px; height: 25px; vertical-align: top;"></canvas></div>
+
+                                    </div>
+                                </div>
+                            </div>
+
+
+
+
+
+                        </div>
+                    </div>
+                    <!--card stats end-->
+                    <!-- //////////////////////////////////////////////////////////////////////////// -->
+                    <!--card widgets start-->
+                    <!--end container-->
+                </div>
+            </section>
+
+            <!-- LEFT RIGHT SIDEBAR NAV-->
+
+        </div>
+        <!-- END WRAPPER -->
+
+    </div>
+
+
+</div>
+</body>
+<div th:fragment="script">
+    <script src="../Scripts/Chart.min.js"></script>
+    <script>
+
+    $(document).ready(function () {
+
+
+        app.controller("AdminCtrl", ['$filter','$scope', '$http', '$element', 'Animations', 'uiGridConstants', '$timeout', '$interval', '$attrs', 'crudGridDataFactory', 'notificationFactory', 'lookupFactory', function ($filter,$scope, $http, $element, Animations, uiGridConstants, $timeout, $interval, $attrs, crudGridDataFactory, notificationFactory, lookupFactory) {
+            $scope.data = [];
+            $scope.labels = [];
+            $http.get('/rest/vehicules')
+                    .success(function (data) {
+                        data = data;
+                        for (var i = 0; i < data.length; i++) {
+                            $scope.labels.push(data[i].intitule);
+                            $scope.data.push(data[i].kilometrage.toFixed(2));
+                        }
+                        $scope.chart();
+                    });
+
+
+            Chart.defaults.global.responsive = true;
+            $scope.chart = function () {
+                $scope.data_ = {
+                    //client
+                    labels: $scope.labels,
+                    datasets: [
+                        {
+                            label: "Solde par client",
+                            fillColor: "rgba(220,220,220,0.5)",
+                            strokeColor: "rgba(220,220,220,0.8)",
+                            highlightFill: "rgba(220,220,220,0.75)",
+                            highlightStroke: "rgba(220,220,220,1)",
+                            data: $scope.data // sumCredit
+                        }
+                    ]
+                };
+
+
+                options = {
+                    //Boolean - Whether the scale should start at zero, or an order of magnitude down from the lowest value
+                    scaleBeginAtZero: true,
+
+                    //Boolean - Whether grid lines are shown across the chart
+                    scaleShowGridLines: true,
+
+                    //String - Colour of the grid lines
+                    scaleGridLineColor: "rgba(255,255,255,0.4)",
+
+                    //Number - Width of the grid lines
+                    scaleGridLineWidth: 1,
+
+                    //Boolean - Whether to show horizontal lines (except X axis)
+                    scaleShowHorizontalLines: true,
+                    scaleFontColor: "#fff",
+
+                    //Boolean - Whether to show vertical lines (except Y axis)
+                    scaleShowVerticalLines: true,
+
+                    //Boolean - If there is a stroke on each bar
+                    barShowStroke: true,
+
+                    //Number - Pixel width of the bar stroke
+                    barStrokeWidth: 2,
+
+                    //Number - Spacing between each of the X value sets
+                    barValueSpacing: 5,
+
+                    //Number - Spacing between data sets within X values
+                    barDatasetSpacing: 1,
+                    tooltipTemplate: "<%if (label){%><%=label%> : <%}%><%= value %>",
+
+                    // String - Template string for multiple tooltips
+                    multiTooltipTemplate: "<%= value.toFixed(2)%>",
+
+                    //String - A legend template
+                    legendTemplate: "<ul class=\"<%=name.toLowerCase()%>-legend\"><% for (var i=0; i<datasets.length; i++){%><li><span style=\"background-color:<%=datasets[i].fillColor%>\"></span><%if(datasets[i].label){%><%=datasets[i].label%><%}%></li><%}%></ul>"
+
+                };
+                var ctx = document.getElementById("myChart").getContext("2d");
+                var myBarChart = new Chart(ctx).Bar($scope.data_, options);
+
+
+            }
+            $scope.dataMarge = [];
+            $scope.dataBl = [];
+            $scope.labelsMarge = [];
+            $scope.chartMarge = function () {
+
+                $scope.data___ = {
+                    labels: $scope.labelsMarge,
+                    datasets: [
+                        {
+                            label: "BL",
+                            fillColor: "rgba(220,220,220,0.4)",
+                            strokeColor: "rgba(220,220,220,1)",
+                            pointColor: "rgba(220,220,220,1)",
+                            pointStrokeColor: "",
+                            pointHighlightFill: "blue",
+                            pointHighlightStroke: "rgba(220,220,220,1)",
+
+                            data: $scope.dataBl
+                        },
+                        {
+                            label: "Marges",
+                            fillColor: "rgba(56,162,255,1)",
+                            strokeColor: "rgba(2,86,160,1)",
+                            pointColor: "rgba(2,86,160,1)",
+                            pointStrokeColor: "",
+                            pointHighlightFill: "white",
+                            pointHighlightStroke: "rgba(151,187,205,1)",
+
+                            data: $scope.dataMarge
+                        },
+                    ]
+                };
+
+
+                optionsMarge = {
+                    //Boolean - Whether to show lines for each scale point
+                    scaleShowLine: true,
+
+                    //Boolean - Whether we show the angle lines out of the radar
+                    angleShowLineOut: true,
+
+                    //Boolean - Whether to show labels on the scale
+                    scaleShowLabels: false,
+                    // Boolean - Whether the scale should begin at zero
+                    scaleBeginAtZero: true,
+
+                    //String - Colour of the angle line
+                    angleLineColor: "rgba(255,255,255,.7)",
+
+                    //Number - Pixel width of the angle line
+                    angleLineWidth: 3,
+
+                    //String - Point label font declaration
+                    pointLabelFontFamily: "'Arial'",
+
+                    //String - Point label font weight
+                    pointLabelFontStyle: "normal",
+                    scaleFontColor: "#fff",
+
+                    //Number - Point label font size in pixels
+                    pointLabelFontSize: 15,
+
+                    //String - Point label font colour
+                    pointLabelFontColor: "#fff",
+
+                    //Boolean - Whether to show a dot for each point
+                    pointDot: true,
+
+                    //Number - Radius of each point dot in pixels
+                    pointDotRadius: 5,
+
+                    //Number - Pixel width of point dot stroke
+                    pointDotStrokeWidth: 5,
+
+                    //Number - amount extra to add to the radius to cater for hit detection outside the drawn point
+                    pointHitDetectionRadius: 12,
+
+                    //Boolean - Whether to show a stroke for datasets
+                    datasetStroke: true,
+
+                    //Number - Pixel width of dataset stroke
+                    datasetStrokeWidth: 5,
+
+                    //Boolean - Whether to fill the dataset with a colour
+                    datasetFill: true,
+                    tooltipTemplate: "<%if (label){%><%=label%> : <%}%><%= value %>",
+                    multiTooltipTemplate: "<%= value.toFixed(2) %>",
+                    //String - A legend template
+                    legendTemplate: "<ul class=\"<%=name.toLowerCase()%>-legend\"><% for (var i=0; i<datasets.length; i++){%><li><span style=\"background-color:<%=datasets[i].strokeColor%>\"></span><%if(datasets[i].label){%><%=datasets[i].label%><%}%></li><%}%></ul>"
+
+                }
+                var ctx = document.getElementById("myChartMarge").getContext("2d");
+                var myChartMarge = new Chart(ctx).Radar($scope.data___, optionsMarge);
+
+
+            }
+
+
+
+
+            $scope.data__ = [];
+            $scope.chartArticles = function () {
+
+                options_ = {
+                    //Boolean - Whether we should show a stroke on each segment
+                    segmentShowStroke: true,
+
+                    //String - The colour of each segment stroke
+                    segmentStrokeColor: "#fff",
+
+                    //Number - The width of each segment stroke
+                    segmentStrokeWidth: 2,
+
+                    //Number - The percentage of the chart that we cut out of the middle
+                    percentageInnerCutout: 50, // This is 0 for Pie charts
+
+                    //Number - Amount of animation steps
+                    animationSteps: 100,
+
+                    //String - Animation easing effect
+                    animationEasing: "easeOutBounce",
+
+                    //Boolean - Whether we animate the rotation of the Doughnut
+                    animateRotate: true,
+
+                    //Boolean - Whether we animate scaling the Doughnut from the centre
+                    animateScale: false,
+                    tooltipTemplate: "<%if (label){%><%=label%> : <%}%><%= value %>",
+
+
+                    //String - A legend template
+                    legendTemplate: "<ul class=\"<%=name.toLowerCase()%>-legend\"><% for (var i=0; i<segments.length; i++){%><li><span style=\"background-color:<%=segments[i].fillColor%>\"></span><%if(segments[i].label){%><%=segments[i].label%><%}%></li><%}%></ul>"
+
+                }
+                var ctx = document.getElementById("myChartArticles").getContext("2d");
+                var myChartArticles = new Chart(ctx).Pie($scope.data__, options_);
+
+
+            }
+            $scope.dataDifference = [];
+            $scope.chartCaisse = function () {
+
+                $scope.dataMission_ = {
+                    //client
+                    labels: $scope.labelsMission,
+                    datasets: [
+                        {
+                            label: "Le montant dans la caisse",
+                            fillColor: "rgba(220,220,220,0.2)",
+                            strokeColor: "rgba(220,220,220,1)",
+                            pointColor: "rgba(220,220,220,1)",
+                            pointStrokeColor: "#fff",
+                            pointHighlightFill: "#fff",
+                            pointHighlightStroke: "rgba(220,220,220,1)",
+                            data: $scope.dataMission
+                        },
+
+                    ],
+                };
+
+
+                optionsCaisse = {
+
+                    ///Boolean - Whether grid lines are shown across the chart
+                    scaleShowGridLines: true,
+
+                    //String - Colour of the grid lines
+                    scaleGridLineColor: "rgba(255,255,255,.5)",
+
+                    //Number - Width of the grid lines
+                    scaleGridLineWidth: 1,
+
+                    //Boolean - Whether to show horizontal lines (except X axis)
+                    scaleShowHorizontalLines: true,
+
+                    //Boolean - Whether to show vertical lines (except Y axis)
+                    scaleShowVerticalLines: true,
+
+                    //Boolean - Whether the line is curved between points
+                    bezierCurve: true,
+
+                    //Number - Tension of the bezier curve between points
+                    bezierCurveTension: 0.4,
+
+                    //Boolean - Whether to show a dot for each point
+                    pointDot: true,
+
+                    //Number - Radius of each point dot in pixels
+                    pointDotRadius: 4,
+
+                    //Number - Pixel width of point dot stroke
+                    pointDotStrokeWidth: 1,
+
+                    //Number - amount extra to add to the radius to cater for hit detection outside the drawn point
+                    pointHitDetectionRadius: 20,
+
+                    //Boolean - Whether to show a stroke for datasets
+                    datasetStroke: true,
+                    scaleFontColor: "#fff" ,
+
+                    //Number - Pixel width of dataset stroke
+                    datasetStrokeWidth: 2,
+                    tooltipTemplate: "<%if (label){%><%=label%> : <%}%><%= value %>",
+
+                    // String - Template string for multiple tooltips
+                    multiTooltipTemplate: "<%= value.toFixed(2) %>",
+                    //Boolean - Whether to fill the dataset with a colour
+                    datasetFill: true,
+                    //String - A legend template
+                    legendTemplate: "<ul class=\"<%=name.toLowerCase()%>-legend\"><% for (var i=0; i<datasets.length; i++){%><li><span style=\"background-color:<%=datasets[i].strokeColor%>\"></span><%if(datasets[i].label){%><%=datasets[i].label%><%}%></li><%}%></ul>"
+
+                }
+                $('#myChartCaisse').remove(); // this is my <canvas> element
+                $('#graph-container').append('<canvas id="myChartCaisse" style="width: 824px; height: 192px;" height="192" width="824"><canvas>');
+                var ctxCaisse = document.getElementById("myChartCaisse").getContext("2d");
+                var myBarChartCaisse = new Chart(ctxCaisse).Line($scope.dataMission_, optionsCaisse);// new Chart(ctx).Line(data, options);
+
+
+            }
+
+
+
+
+
+            $http.get('/Statistics/nbrMissionAcheve')
+                    .success(function (data) {
+                        $scope.nbrMissionAcheve = data;
+
+                    });
+
+            $http.get('/Statistics/nbrChauffeurs')
+                    .success(function (data) {
+                        $scope.nbrChauffeurs = data;
+
+                    });
+            $http.get('/Statistics/nbrVehicules')
+                    .success(function (data) {
+                        $scope.nbrVehicules = data;
+
+                    });
+            $http.get('/Statistics/nbrMissionInAcheve')
+                    .success(function (data) {
+                        $scope.nbrMissionInAcheve = data;
+
+                    });
+
+
+
+
+            $http.get('/Statistics/MissionsAccomplished')
+                    .success(function (data) {
+                        $scope.missionsAccomplie = data;
+                    });
+
+            $scope.dataMission = [];
+            $scope.labelsMission = [];
+            $http.get('/Statistics/Missions')
+                    .success(function (data) {
+                        for (var i = 0; i < data.length; i++) {
+                            d = data[i];
+                            if (d.date == 1) d.date = "Janvier";
+                            if (d.date == 2) d.date = "Février";
+                            if (d.date == 3) d.date = "Mars";
+                            if (d.date == 4) d.date = "Avril";
+                            if (d.date == 5) d.date = "Mai";
+                            if (d.date == 6) d.date = "Juin";
+                            if (d.date == 7) d.date = "Juillet";
+                            if (d.date == 8) d.date = "Août";
+                            if (d.date == 9) d.date = "Septembre";
+                            if (d.date == 10) d.date = "Octobre";
+                            if (d.date == 11) d.date = "Novembre";
+                            if (d.date == 12) d.date = "Décembre";
+                            $scope.labelsMission.push(d.date);
+                            $scope.dataMission.push(d.nbr);
+                        }
+
+
+                        $scope.chartCaisse();
+                    }).error(function () {
+
+                //notificationFactory.error("Il y'a un erreur", "Attention");
+
+            });
+
+
+        }]);
+        angular.bootstrap(document, ['AdminModule']);
+
+
+    });
+
+
+</script>
+</div>
+</html>
+
+
+

@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      th:include="fragments/layout :: page">
+<head>
+    <title></title>
+</head>
+<body>
+<div th:fragment="content">
+    <div class="col-lg-4">
+        <div class="row">
+            <div id="compteur" style="height:250px;width:100%;"></div>
+        </div>
+        <div class="row"  ng-show="item != undefined">
+            <div class="row">
+                <img style="width: 100%;height: 180px;" src="{{item.image}}"/>
+            </div>
+            <div class="row">
+                <p><i class="mdi-maps-directions-car cyan-text text-darken-2"></i><span style="font-weight: bolder"> Matricule : </span><span>{{item.matricule}}</span>  </p>
+                <p><i class="mdi-action-perm-identity cyan-text text-darken-2"></i><span style="font-weight: bolder"> Chaffeur : </span><span>{{item.chauffeur.name}}</span>  </p>
+                <p><i class="mdi-action-perm-phone-msg cyan-text text-darken-2"></i><span style="font-weight: bolder"> Tel : </span><span>{{item.chauffeur.tel}}</span>  </p>
+                <p><i class="mdi-navigation-unfold-more cyan-text text-darken-2"></i><span style="font-weight: bolder"></span> Kilomètrage : <span style="font-weight: bold;">{{item.kilometrage | number:2}} Km.</span>  </p>
+
+            </div>
+        </div>
+
+    </div>
+    <div class="col-lg-8">
+    <div class="row">
+        <div class="row">
+            <div class="switch">
+                <label>
+                    <input type="checkbox" ng-model="refresh">
+                    <span class="lever"></span>
+                    Rafraîchir tjrs
+                </label>
+            </div>
+        </div>
+        <div class="row">
+
+        <div class="col-lg-4">
+            <label>Recherche par adresse</label>
+            <input ng-model="adresse" ng-enter="rechercherAdresse()" type="text" placeholder="Adresse" class="validate"/>
+        </div>
+        <div class="col-lg-2 col-lg-offset-0">
+            <a ng-click="rechercherAdresse()" class="btn-floating waves-effect waves-light cyan" style="margin-top:20px;"><i class="mdi-action-search"></i></a>
+        </div>
+        </div>
+    </div>
+    <div class="row">
+        <div id="map"></div>
+    </div>
+    <div class="row">
+    <div style="height:400px !important;" ui-grid-pagination ui-grid-selection  ui-grid-auto-resize ui-grid-move-columns ui-grid="gridOptions" ui-grid-resize-columns ui-grid-edit ui-grid-cellnav class="grid"></div>
+    </div>
+
+    </div>
+</div>
+</body>
+<div th:fragment="script">
+    <script src="../Scripts/echarts.js"></script>
+    <script src="../Scripts/echarts-all.js"></script>
+    <script src="../Scripts/gauge.js"></script>
+<script>
+
+    $(document).ready(function () {
+
+
+        app.controller("AdminCtrl", ['$filter','$scope', '$element', 'Animations', 'uiGridConstants', '$timeout', '$interval', '$attrs', 'crudGridDataFactory', 'notificationFactory', 'lookupFactory', function ($filter,$scope, $element, Animations, uiGridConstants, $timeout, $interval, $attrs, crudGridDataFactory, notificationFactory, lookupFactory) {
+            $scope.table = "vehicules";
+            $scope.refresh = true;
+            $scope.lookupFactory = lookupFactory;
+            //alatfa 31.630758,-8.062641
+            var map = new GMaps({
+                div: '#map',
+                lat: 31.630758,
+                lng: -8.062641,
+                width: '*',
+                height: '300px',
+                zoom:17,
+
+            });
+
+            $scope.rechercherAdresse=function()
+            {
+                if($scope.adresse == "" || $scope.adresse == undefined)
+                {
+                    notificationFactory.warning("Entrez une adresse","Attention");
+                    return;
+                }
+
+                GMaps.geocode({
+                    address: $scope.adresse,
+                    callback: function(results, status) {
+                        if (status == 'OK') {
+                            var latlng = results[0].geometry.location;
+                            map.setCenter(latlng.lat(), latlng.lng());
+                            /*map.addMarker({
+                             lat: latlng.lat(),
+                             lng: latlng.lng()
+                             });*/
+                        }
+                    }
+                });
+            }
+            $scope.vehiculeMarkers = [];
+
+            $scope.circles = [];
+
+            $scope.loadMarkers = function()
+            {
+                $scope.markers = [];
+                for (var i = 0; i < $scope.circles.length; i++) {
+                    $scope.circles[i].setMap(null);
+                }
+                $scope.circles = [];
+                map.removeMarkers();
+                $scope.markers = lookupFactory.getAll("pointInterets");
+                for(var i = 0;i<$scope.markers.length; i++)
+                {
+                    var m = $scope.markers[i];
+                    map.addMarker({
+                        lat: m.latitude,
+                        lng: m.longitude,
+                        title: m.nom,
+                        icon: m.icon.path,
+                        infoWindow : {
+                            content : '<div class="marker"><img src="'+m.icon.path+'"/><div class="titre">'+
+                            m.nom+'</div><div class="adresse">' +
+                            '<span><b>Adresse :</b> </span>'+m.adresse+'</div>'+
+                            '</div>',
+                            click: function (e) {
+                                // alert('teest');
+                            }
+                        }});
+
+                    circle = map.drawCircle({
+                        lat: m.latitude,
+                        lng: m.longitude,
+                        radius: m.rayon,
+                        strokeColor: '#BBD8E9',
+                        strokeOpacity: 1,
+                        strokeWeight: 3,
+                        fillColor: '#BBD8E9',
+                        editable:false,
+
+                    });
+                    $scope.circles.push(circle);
+//                    circle.bindTo('center', m, 'position');
+                }
+
+            }
+
+            $scope.loadMarkers();
+            $scope.filterOptions = {
+                filterText: "",
+                filterVisible: null,
+                useExternalFilter: true
+            };
+            //$scope.pagingOptions = {
+            //    pageSizes: [5, 10, 30],
+            //    pageSize: 5,
+            //    totalServerItems: 0,
+            //    currentPage: 1
+            //};
+            $scope.deleteMode = false;
+
+            $scope.onDblClickRow = function (rowItem) {
+                console.log("dbClick")
+            };
+            $scope.gridOptions = {
+                showColumnFooter: true,
+                //enableRowHeaderSelection: true,
+                showGridFooter: true,
+                rowHeight: 40,
+                enableFiltering: true,
+                //paginationPageSizes: [5, 10, 30],
+                //paginationPageSize: 5,
+                enableVerticalScrollbar: uiGridConstants.scrollbars.WHEN_NEEDED,
+                enableColumnResizing: true,
+                enableRowSelection: true,
+                enableSelectAll: true,
+                selectionRowHeaderWidth: 40,
+                //enableFullRowSelection : true,
+            };
+
+            var Repeater = function () {
+               /* if($scope.gridApi.selection.getSelectedRows().length == 0) {
+                    for(var i =0;i<$scope.vehiculeMarkers.length;i++)
+                    {
+                        $scope.vehiculeMarkers[i].setMap(null);
+                        if(i== $scope.vehiculeMarkers.length - 1) $scope.vehiculeMarkers = [];
+
+                    }
+                }else {
+
+                }*/
+                if(!$scope.refresh) return;
+                map.removeMarkers();
+                $scope.loadMarkers();
+                var bounds = [];
+                for(var i = 0;i<$scope.gridApi.selection.getSelectedRows().length;i++)
+                {
+                    var v = $scope.gridApi.selection.getSelectedRows()[i];
+
+
+                    $scope.$apply(function () {
+
+                        $.ajax({
+                            url: '/rest/positions/findTopByVehicule_IdOrderByDateDesc?idVehicule='+v.id,
+                            cache: false,
+                            async: false,
+                            success: function (data) {
+                                if($scope.item != undefined)
+                                    $scope.item.kilometrage = data.vehicule.kilometrage;
+                               /* if(map.marker != undefined)
+                                {
+                                    map.marker.setMap(null);
+                                }*/
+                                /*map.marker = */
+                                $scope.vehiculeMarkers[i] = map.addMarker({
+                                    lat: data.latitude,
+                                    lng: data.longitude,
+                                    //title: m.nom,
+                                    icon: (compteur.vitesse == 0 || compteur.vitesse == undefined) ? '/icons/truck3.png':'/icons/truck_green.png',
+                                    infoWindow : {
+                                        content : '<div class="marker"><img src="/icons/truck3.png"/><div class="titre">'+
+                                        data.vehicule.matricule+'</div><div class="adresse">' +
+                                        '<b>Chauffeur :</b>'+data.vehicule.chauffeur.name+'</div>'+
+                                        '<div class="adresse"><b>Latitude :</b>'+data.latitude+'</div>'+
+                                        '<div class="adresse"><b>Longitude :</b>'+data.longitude+'</div>'+
+                                        '<div class="adresse"><b>Date :</b>'+$filter("date")(data.date,"dd/MM/yyyy HH:mm:ss")+'</div>'+
+                                        '</div>',
+                                        click: function (e) {
+                                            // alert('teest');
+                                        }
+                                    }
+                                });
+                                var latlng = new google.maps.LatLng(data.latitude, data.longitude);//auto zooooooooom
+                                bounds.push(latlng);
+
+                                if($scope.gridApi.selection.getSelectedRows().length == 1)
+                                {
+                                    map.setCenter(data.latitude, data.longitude);
+                                }
+                            }
+
+                        });
+
+                    });
+
+                }
+                 if($scope.gridApi.selection.getSelectedRows().length > 1) {
+                     map.fitLatLngBounds(bounds);
+                 }
+
+            };
+            var timer = setInterval(Repeater, 2000);
+
+            $scope.gridOptions.multiSelect = true;
+            $scope.gridOptions.modifierKeysToMultiSelect = false;
+            $scope.gridOptions.noUnselect = false;
+            $scope.items = [];
+            var headerTemplateAdd = '';
+            var headerTemplateDelete = '';
+            $scope.gridOptions.columnDefs = [
+                { enableCellEdit: false, width: "76", allowCellFocus: false, headerCellTemplate: '<button class="btn cyan btn-xs btn-block" ng-click="grid.appScope.addNew()"><span class="icon-refresh"></span></button>', name: ' ', cellTemplate: headerTemplateAdd, sortable: false },
+                { name: 'intitule', displayName: 'Véhicule', width: "*", resizable: true,enableCellEdit: false },
+                { name: 'matricule', displayName: 'Matricule', width: "*", resizable: true,enableCellEdit: false },
+                { name: 'chauffeur.name', displayName: 'Chauffeur', width: "*", resizable: true,enableCellEdit: false},
+                { name: 'equipementGps.name', displayName: 'Equipement GPS', width: "*", resizable: true,enableCellEdit: false},
+                { name: 'kilometrage', displayName: 'Kilomètrage', width: "*", resizable: true,enableCellEdit: false,cellFilter:"number:2" },
+                { enableCellEdit: false, width: "76", name: '\'', allowCellFocus: false, headerCellTemplate: '<button class="btn cyan btn-xs btn-block" ng-click="grid.appScope.toggleFiltering()"><span class="icon-filter"></span></button>', cellTemplate: headerTemplateDelete, sortable: false },
+
+            ];
+
+
+            $scope.getPagedDataAsync = function () {
+                crudGridDataFactory($scope.table, '').query(itemsQuerySucceeded, queryFailed);
+            };
+            $scope.getPagedDataAsync();
+
+            $scope.gridOptions.onRegisterApi = function (gridApi) {
+                $scope.gridApi = gridApi;
+
+                gridApi.grid.registerRowBuilder(function (row, gridOptions) {
+                    row.isNew = true;
+                });
+                gridApi.cellNav.on.navigate($scope, function (newRowCol, oldRowCol) {
+                    $scope.gridApi.selection.selectRow(newRowCol.row.entity);
+                });
+                gridApi.selection.on.rowSelectionChanged($scope,function(row){
+                    /*if($scope.item.latitude == "" || $scope.item.longitude == "" || $scope.item.longitude == undefined || $scope.item.latitude == "")
+                            return;
+                    map.setCenter($scope.item.latitude, $scope.item.longitude);*/
+                    $scope.loadCompteur(row.entity.id);
+                    $scope.item = row.entity;
+                });
+                gridApi.selection.on.rowSelectionChangedBatch($scope,function(rows){
+                    //console.log(rows);
+                    $scope.loadCompteur(rows[0].entity);
+                });
+            }
+            $scope.selectRow = function () {
+                return $scope.gridApi.selection.getSelectedRows();
+            };
+
+            $scope.toggleFiltering = function () {
+                $scope.gridOptions.enableFiltering = !$scope.gridOptions.enableFiltering;
+                $scope.gridApi.core.notifyDataChange(uiGridConstants.dataChange.COLUMN);
+                //$scope.gridApi.core.notifyDataChange($scope.gridApi.grid, uiGridConstants.dataChange.ALL);
+
+            };
+
+
+
+
+
+            $scope.delete = function (e, item) {
+                //console.log(item)
+                if (confirm("Voulez-vous supprimer cet enregistrement ?")) {
+
+                    if (item.id != null) {
+                        $scope.deleteMode = true;
+                        crudGridDataFactory($scope.table).remove({ key: item.id }, item, saveSucceeded, saveFailed);
+                        $scope.gridOptions.data.splice($scope.gridOptions.data.indexOf(item), 1);
+
+                    } else {
+                        $scope.gridOptions.data.splice($scope.gridOptions.data.indexOf(item), 1);
+
+                    }
+                }
+
+            }
+
+            /*region generique*/
+            function queryFailed(error) {
+                notificationFactory.error(error.message, "Query failed");
+            }
+
+            function itemsQuerySucceeded(data) {
+                $scope.items = data;
+                $scope.gridOptions.data = $scope.items;
+
+                //$scope.totalServerItems = data["odata.count"];
+                //if ($scope.items.length > 0) {
+                //    if ($scope.item) {
+                //        for (i = 0; i < $scope.items.length; i++) {
+                //            if ($scope.items[i].id == $scope.item.id)
+                //                $scope.dataGrid.selectedItem = $scope.items[i];
+                //        }
+                //    }
+                //    if ($scope.dataGrid.selectedItem == null) {
+                //        $scope.dataGrid.selectedItem = $scope.items[0];
+                //    }
+
+                //    $scope.setItem($scope.dataGrid.selectedItem);
+                //}
+
+                //notificationFactory.success("Fetched " + data.value.length + " " + $scope.table);
+            }
+
+            function queryFailed(error) {
+                notificationFactory.error(error.message, "Query failed");
+            }
+
+            saveSucceeded = function (saveResult) {
+                $scope.loadMarkers();
+                notificationFactory.success();
+                //$scope.getPagedDataAsync();
+                $scope.gridApi.core.refresh();
+
+            }
+
+            saveFailed = function (error) {
+                var reason = error.statusText;
+                var detail = error.data["odata.error"];
+                if (detail) {
+                    reason += detail.innererror.message;
+                }
+                if (error.config["method"] == "POST")
+                    $scope.item.id = null; //on affecte null pour permetre d'ajouter a nouveau le meme item
+
+                notificationFactory.error(
+                        "Impossible d'enregistrer les modifications. " + reason +
+                        " Il faut actualiser la page.");
+                $scope.getPagedDataAsync();
+                /*
+                 var entityErrors = error.entityErrors;
+
+                 if (entityErrors && entityErrors.length) {
+                 handleSaveValidationError(entityErrors);
+                 return;
+                 }
+                 if (detail && detail.ExceptionType &&
+                 detail.ExceptionType.indexOf('OptimisticConcurrencyException') !== -1) {
+                 // Concurrency error
+                 reason =
+                 "Another user, perhaps the server, may have deleted one or all of the same entities.";
+                 }
+                 */
+
+            };
+            //$scope.gridOptions.data = $scope.table;
+            $scope.loadCompteur = function(idVehicule){
+
+                compteur = echarts.init(document.getElementById("compteur"));
+                compteur.option = {
+                    backgroundColor: '#1b1b1b',
+                    tooltip : {
+                        formatter: "{a} <br/>{c} {b}"
+                    },
+                    toolbox: {
+                        show : false,
+                        feature : {
+                            mark : {show: false},
+                            restore : {show: false},
+                            saveAsImage : {show: true}
+                        }
+                    },
+                    series : [
+                        {
+                            name:'compteur',
+                            type:'gauge',
+                            min:0,
+                            max:220,
+                            splitNumber:11,
+                            axisLine: {
+                                lineStyle: {
+                                    color: [[0.09, 'lime'],[0.82, '#1e90ff'],[1, '#ff4500']],
+                                    width: 3,
+                                    shadowColor : '#fff',
+                                    shadowBlur: 10
+                                }
+                            },
+                            axisLabel: {
+                                textStyle: {
+                                    fontWeight: 'bolder',
+                                    color: '#fff',
+                                    shadowColor : '#fff',
+                                    shadowBlur: 10
+                                }
+                            },
+                            axisTick: {
+                                length :15,
+                                lineStyle: {
+                                    color: 'auto',
+                                    shadowColor : '#fff',
+                                    shadowBlur: 10
+                                }
+                            },
+                            splitLine: {
+                                length :25,
+                                lineStyle: {
+                                    width:3,
+                                    color: '#fff',
+                                    shadowColor : '#fff',
+                                    shadowBlur: 10
+                                }
+                            },
+                            pointer: {
+                                shadowColor : '#fff',
+                                shadowBlur: 5
+                            },
+                            title : {
+                                textStyle: {
+                                    fontWeight: 'bolder',
+                                    fontSize: 20,
+                                    fontStyle: 'italic',
+                                    color: '#fff',
+                                    shadowColor : '#fff',
+                                    shadowBlur: 10
+                                }
+                            },
+                            detail : {
+                                backgroundColor: 'rgba(30,144,255,0.8)',
+                                borderWidth: 1,
+                                borderColor: '#fff',
+                                shadowColor : '#fff',
+                                shadowBlur: 5,
+                                offsetCenter: [0, '50%'],
+                                textStyle: {
+                                    fontWeight: 'bolder',
+                                    color: '#fff'
+                                }
+                            },
+                            data:[{value: 0, name: 'km/h'}]
+                        },
+
+                    ]
+
+                }
+
+
+
+
+            }
+
+            var myIntervalFunction = function() {
+
+
+
+
+                cancelRefresh = $timeout(function myFunction() {
+                    if($scope.gridApi.selection.getSelectedRows().length > 0)
+                    {
+                        $scope.$apply(function () {
+
+                            $.ajax({
+                                url: '/rest/positions/findTopByVehicule_IdOrderByDateDesc?idVehicule='+$scope.gridApi.selection.getSelectedRows()[0].id,
+                                cache: false,
+                                async: false,
+                                success: function (data) {
+                                    if(data.vitesse != undefined)
+                                    {
+                                        console.log(data);
+                                        if(new Date().getTime() - data.date > 5000 || data.vitesse < 1)
+                                        {
+                                            compteur.option.series[0].data[0].value = 0;//vitesse
+                                            compteur.vitesse = 0;
+                                        }else {
+                                            compteur.option.series[0].data[0].value = data.vitesse;//vitesse
+                                            compteur.vitesse = data.vitesse;
+                                        }
+                                    }
+
+                                }
+                            });
+
+                        });
+
+
+                    }
+
+                if(typeof(compteur.setOption) == "function")
+                {
+                    compteur.setOption(compteur.option,true);
+                }
+                    cancelRefresh = $timeout(myIntervalFunction, 800);
+                },800);
+            };
+            myIntervalFunction();
+
+        }]);
+        angular.bootstrap(document, ['AdminModule']);
+
+    });
+</script>
+</div>
+</html>
+
+
+

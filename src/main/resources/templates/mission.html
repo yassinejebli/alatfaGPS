@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      th:include="fragments/layout :: page">
+<head>
+    <title></title>
+</head>
+<body>
+<div th:fragment="content">
+    <div class="row">
+        <div class="col-lg-4">
+            <label>Recherche par adresse</label>
+            <input ng-model="adresse" ng-enter="rechercherAdresse()" type="text" placeholder="Adresse" class="validate"/>
+        </div>
+        <div class="col-lg-2 col-lg-offset-0">
+            <a ng-click="rechercherAdresse()" class="btn-floating waves-effect waves-light cyan" style="margin-top:20px;"><i class="mdi-action-search"></i></a>
+        </div>
+    </div>
+    <div class="row">
+        <div id="map"></div>
+    </div>
+    <div class="row">
+    <div style="height:400px !important;" ui-grid-pagination ui-grid-selection  ui-grid-auto-resize ui-grid-move-columns ui-grid="gridOptions" ui-grid-resize-columns ui-grid-edit ui-grid-cellnav class="grid"></div>
+    </div>
+</div>
+
+</body>
+<div th:fragment="script">
+<script>
+
+    $(document).ready(function () {
+
+
+        app.controller("AdminCtrl", ['$filter','$scope', '$element', 'Animations', 'uiGridConstants', '$timeout', '$interval', '$attrs', 'crudGridDataFactory', 'notificationFactory', 'lookupFactory', function ($filter,$scope, $element, Animations, uiGridConstants, $timeout, $interval, $attrs, crudGridDataFactory, notificationFactory, lookupFactory) {
+            $scope.table = "missions";
+            $scope.flagDebut = "/icons/start.png";
+            $scope.flagFin = "/icons/end.png";
+            $scope.lookupFactory = lookupFactory;
+            //alatfa 31.630758,-8.062641
+            var map = new GMaps({
+                div: '#map',
+                lat: 31.630758,
+                lng: -8.062641,
+                width: '*',
+                height: '300px',
+                zoom:17,
+
+            });
+
+            $scope.rechercherAdresse=function()
+            {
+                if($scope.adresse == "" || $scope.adresse == undefined)
+                {
+                    notificationFactory.warning("Entrez une adresse","Attention");
+                    return;
+                }
+
+                GMaps.geocode({
+                    address: $scope.adresse,
+                    callback: function(results, status) {
+                        if (status == 'OK') {
+                            var latlng = results[0].geometry.location;
+                            map.setCenter(latlng.lat(), latlng.lng());
+                            /*map.addMarker({
+                             lat: latlng.lat(),
+                             lng: latlng.lng()
+                             });*/
+                        }
+                    }
+                });
+            }
+
+            $scope.circles = [];
+
+            $scope.loadMarkers = function()
+            {
+                $scope.markers = [];
+                for (var i = 0; i < $scope.circles.length; i++) {
+                    $scope.circles[i].setMap(null);
+                }
+                $scope.circles = [];
+                map.removeMarkers();
+                $scope.markers = lookupFactory.getAll("pointInterets");
+                for(var i = 0;i<$scope.markers.length; i++)
+                {
+                    var m = $scope.markers[i];
+                    map.addMarker({
+                        lat: m.latitude,
+                        lng: m.longitude,
+                        title: m.nom,
+                        icon: m.icon.path,
+                        infoWindow : {
+                            content : '<div class="marker"><img src="'+m.icon.path+'"/><div class="titre">'+
+                            m.nom+'</div><div class="adresse">' +
+                            '<span><b>Adresse :</b> </span>'+m.adresse+'</div>'+
+                            '</div>',
+                            click: function (e) {
+                                // alert('teest');
+                            }
+                        }});
+
+                    circle = map.drawCircle({
+                        lat: m.latitude,
+                        lng: m.longitude,
+                        radius: m.rayon,
+                        strokeColor: '#BBD8E9',
+                        strokeOpacity: 1,
+                        strokeWeight: 3,
+                        fillColor: '#BBD8E9',
+                        editable:false,
+
+                    });
+                    $scope.circles.push(circle);
+//                    circle.bindTo('center', m, 'position');
+                }
+
+            }
+
+            $scope.loadMarkers();
+            $scope.filterOptions = {
+                filterText: "",
+                filterVisible: null,
+                useExternalFilter: true
+            };
+            //$scope.pagingOptions = {
+            //    pageSizes: [5, 10, 30],
+            //    pageSize: 5,
+            //    totalServerItems: 0,
+            //    currentPage: 1
+            //};
+            $scope.deleteMode = false;
+
+            $scope.onDblClickRow = function (rowItem) {
+                console.log("dbClick")
+            };
+            $scope.gridOptions = {
+                showColumnFooter: true,
+                enableRowSelection: true,
+                enableRowHeaderSelection: false,
+                showGridFooter: true,
+                rowHeight: 40,
+                enableFiltering: false,
+                //paginationPageSizes: [5, 10, 30],
+                //paginationPageSize: 5,
+                enableVerticalScrollbar: uiGridConstants.scrollbars.WHEN_NEEDED,
+                enableColumnResizing: true,
+            };
+
+            $scope.delete = function (e, item) {
+                //console.log(item)
+                if (confirm("Voulez-vous supprimer cet enregistrement ?")) {
+
+                    if (item.id != null) {
+                        $scope.deleteMode = true;
+                        crudGridDataFactory($scope.table).remove({ key: item.id }, item, saveSucceeded, saveFailed);
+                        $scope.gridOptions.data.splice($scope.gridOptions.data.indexOf(item), 1);
+
+                    } else {
+                        $scope.gridOptions.data.splice($scope.gridOptions.data.indexOf(item), 1);
+
+                    }
+                }
+
+            }
+
+            $scope.gridOptions.multiSelect = false;
+            $scope.gridOptions.modifierKeysToMultiSelect = false;
+            $scope.gridOptions.noUnselect = true;
+//lookupChauffeurCellEditTemplate
+            $scope.items = [];
+            var headerTemplateAdd = '<a style="margin-left:15px !important;" ng-click="grid.appScope.trajet(row.entity)"class="btn-floating btn-flat waves-effect waves-light red accent-2 btnGrid"><i class="mdi-editor-vertical-align-bottom"></i></a>';
+            var headerTemplateDelete = '<a style="margin-left:15px !important;"  ng-click="grid.appScope.delete($event, row.entity)" class="btn-floating btnGrid waves-effect btn-flat waves-effect waves-light waves-light red"><i class="mdi-action-delete""></i></a>';
+            $scope.gridOptions.columnDefs = [
+                { enableCellEdit: false, width: "76", allowCellFocus: false, headerCellTemplate: '<button class="btn cyan btn-xs btn-block" ng-click="grid.appScope.addNew()"><span class="icon-plus"></span></button>', name: ' ', cellTemplate: headerTemplateAdd, sortable: false },
+                { name: 'name', displayName: 'Intitulé du mission', width: "*", resizable: true },
+                { name: 'vehicule.intitule', displayName: 'Vehicule', width: "*", enableCellEditOnFocus: false, resizable: true, enableCellEdit: true, editableCellTemplate: lookupVehiculeCellEditTemplate, },
+                { name: 'pointInteretDepart.nom', displayName: 'Point départ', width: "*", enableCellEditOnFocus: false, resizable: true, enableCellEdit: true, editableCellTemplate: lookupPointInteretDepartCellEditTemplate, },
+                { name: 'dateDepart', displayName: 'Date départ', width: "*", type: "datetime-local", cellFilter: 'date:\'dd/MM/yyyy HH:mm\' ', filterCellFiltered: true,editableCellTemplate : lookupDateTimeDepartCellEditTemplate},
+                { name: 'pointInteretFin.nom', displayName: 'Point d\'arrivé', width: "*", enableCellEditOnFocus: false, resizable: true, enableCellEdit: true, editableCellTemplate: lookupPointInteretFinCellEditTemplate, },
+                { name: 'dateFin', displayName: 'Date d\'arrivé', width: "*", type: "date", cellFilter: 'date:\'dd/MM/yyyy HH:mm:ss\' ', filterCellFiltered: true,  enableCellEdit: false},
+                { name: 'numBons', displayName: 'Numéro du bon de livraison', width: "*", resizable: true },
+                { name: 'kilometrageEstime', displayName: 'Kilométrage estimé', width: "*", resizable: true,type:"number" ,cellFilter:"number:2"},
+                { name: 'accomplie',displayName:'Accomplie ?', cellTemplate:'<div class="ui-grid-cell-contents" style="text-align: center !important;"><i ng-class="{\'mdi-device-access-alarms orange-text\': row.entity.accomplie != true,\'mdi-action-assignment-turned-in green-text\': row.entity.accomplie == true}"></i></div>',enableCellEdit: false,},
+                { enableCellEdit: false, width: "76", name: '\'', allowCellFocus: false, headerCellTemplate: '<button class="btn cyan btn-xs btn-block" ng-click="grid.appScope.toggleFiltering()"><span class="icon-filter"></span></button>', cellTemplate: headerTemplateDelete, sortable: false },
+
+            ];
+
+
+            $scope.getPagedDataAsync = function () {
+                crudGridDataFactory($scope.table, '').query(itemsQuerySucceeded, queryFailed);
+            };
+            $scope.getPagedDataAsync();
+
+            $scope.gridOptions.onRegisterApi = function (gridApi) {
+                $scope.gridApi = gridApi;
+
+                gridApi.grid.registerRowBuilder(function (row, gridOptions) {
+                    row.isNew = true;
+                });
+                gridApi.cellNav.on.navigate($scope, function (newRowCol, oldRowCol) {
+                    $scope.gridApi.selection.selectRow(newRowCol.row.entity);
+                });
+                gridApi.selection.on.rowSelectionChanged($scope,function(row){
+
+                        $scope.trajet($scope.gridApi.selection.getSelectedRows()[0]);
+                    });
+
+
+            }
+
+            $scope.trajet = function(item)
+            {
+                if(typeof item.pointInteretDepart !== "object" || typeof item.pointInteretFin !== "object" || item.pointInteretFin == null || item.pointInteretDepart == null)
+                    return;
+                map.removePolylines();
+                map.removeMarker();
+                $scope.loadMarkers();
+                map.addMarker({
+                    lat: item.pointInteretDepart.latitude,
+                    lng: item.pointInteretDepart.longitude,
+                    icon : $scope.flagDebut,
+                    infoWindow : {
+                        content : '<div class="marker"><img src="'+$scope.flagDebut+'"/><div class="titre">'+item.pointInteretDepart.nom+'</div><div class="adresse">' +
+                        '<span><b>Latitude :</b> </span>'+item.pointInteretDepart.latitude+'</div><div class="adresse">' +
+                        '<span><b>Longitude :</b> </span>'+item.pointInteretDepart.longitude+'</div><div class="adresse">' +
+                            /*'<span><b>Date :</b> </span>'+$filter("date")(item.dateDepart,"dd/MM/yyyy HH:mm:ss")+'</div>'+*/
+                        '</div>',
+                        click: function (e) {
+                            // alert('teest');
+                        }
+                    }});
+
+                map.addMarker({
+                    lat: item.pointInteretFin.latitude,
+                    lng: item.pointInteretFin.longitude,
+                    icon : $scope.flagFin,
+                    infoWindow : {
+                        content : '<div class="marker"><img src="'+$scope.flagFin+'"/><div class="titre">'+
+                        item.pointInteretFin.nom+'</div>' +
+                        '<div class="adresse"><b>Latitude :</b>'+item.pointInteretFin.latitude+'</div>'+
+                        '<div class="adresse"><b>Longitude :</b> '+item.pointInteretFin.longitude+'</div>'+
+                        '</div>',
+                        click: function (e) {
+                            // alert('teest');
+                        }
+                    }});
+
+
+
+                var bounds = [];
+                var latlngDepart = new google.maps.LatLng(item.pointInteretDepart.latitude, item.pointInteretDepart.longitude);//auto zooooooooom
+                var latlngFin = new google.maps.LatLng(item.pointInteretFin.latitude, item.pointInteretFin.longitude);//auto zooooooooom
+                bounds.push(latlngDepart);
+                bounds.push(latlngFin);
+                map.fitLatLngBounds(bounds);
+
+                map.drawRoute({
+                    origin: [item.pointInteretDepart.latitude, item.pointInteretDepart.longitude],
+                    destination: [item.pointInteretFin.latitude, item.pointInteretFin.longitude],
+                    travelMode: 'driving',
+                    strokeColor: '#2EA8E6',
+                    strokeOpacity: 0.6,
+                    strokeWeight: 6
+                });
+
+                map.getRoutes({
+                    origin:[item.pointInteretDepart.latitude,item.pointInteretDepart.longitude],
+                    destination: [item.pointInteretFin.latitude, item.pointInteretFin.longitude],
+                    travelMode : google.maps.TravelMode.TRANSIT,
+                    callback: function (e) {
+                        var time = 0;
+                        var distance = 0;
+                        for (var i=0; i<e[0].legs.length; i++) {
+                            time += e[0].legs[i].duration.value;
+                            distance += e[0].legs[i].distance.value;
+                        }
+                        item.kilometrageEstime = distance/1000;//km
+                        if(item.dateDepart instanceof Date) item.dateDepart = item.dateDepart.getTime();
+                        item.dateFin = item.dateDepart + time*1000;
+                        map.removeRoutes();
+                        $scope.$apply(); // appliquer les changements dans la vue
+                        $scope.update(null,item);
+                        //console.log(time + " " + distance);
+                    }
+                });
+            }
+
+            $scope.selectRow = function () {
+                return $scope.gridApi.selection.getSelectedRows();
+            };
+
+            $scope.toggleFiltering = function () {
+                $scope.gridOptions.enableFiltering = !$scope.gridOptions.enableFiltering;
+                $scope.gridApi.core.notifyDataChange(uiGridConstants.dataChange.COLUMN);
+
+            };
+
+            $scope.addNew = function () {
+                $scope.addMode = true;
+                $scope.item = new Object();
+                $scope.items.unshift($scope.item);
+            }
+
+            $scope.update = function (e, item) {
+
+
+                $scope.item = item;
+                if (item.id == null) {
+                    item.id = breeze.core.getUuid();
+                    crudGridDataFactory($scope.table).save(item, saveSucceeded, saveFailed);
+
+                }
+                else {
+                    crudGridDataFactory($scope.table).update(item, saveSucceeded, saveFailed);
+                }
+
+
+            }
+
+            /*region generique*/
+            function queryFailed(error) {
+                notificationFactory.error(error.message, "Query failed");
+            }
+
+            function itemsQuerySucceeded(data) {
+                $scope.items = data;
+                $scope.gridOptions.data = $scope.items;
+
+                //$scope.totalServerItems = data["odata.count"];
+                //if ($scope.items.length > 0) {
+                //    if ($scope.item) {
+                //        for (i = 0; i < $scope.items.length; i++) {
+                //            if ($scope.items[i].id == $scope.item.id)
+                //                $scope.dataGrid.selectedItem = $scope.items[i];
+                //        }
+                //    }
+                //    if ($scope.dataGrid.selectedItem == null) {
+                //        $scope.dataGrid.selectedItem = $scope.items[0];
+                //    }
+
+                //    $scope.setItem($scope.dataGrid.selectedItem);
+                //}
+
+                //notificationFactory.success("Fetched " + data.value.length + " " + $scope.table);
+            }
+
+            function queryFailed(error) {
+                notificationFactory.error(error.message, "Query failed");
+            }
+
+
+            saveSucceeded = function (saveResult) {
+                notificationFactory.success();
+                //$scope.getPagedDataAsync();
+                $scope.gridApi.core.refresh();
+            }
+
+            saveFailed = function (error) {
+                var reason = error.statusText;
+                var detail = error.data["odata.error"];
+                if (detail) {
+                    reason += detail.innererror.message;
+                }
+                if (error.config["method"] == "POST")
+                    $scope.item.id = null; //on affecte null pour permetre d'ajouter a nouveau le meme item
+
+                notificationFactory.error(
+                        "Impossible d'enregistrer les modifications. " + reason +
+                        " Il faut actualiser la page.");
+                $scope.getPagedDataAsync();
+                /*
+                 var entityErrors = error.entityErrors;
+
+                 if (entityErrors && entityErrors.length) {
+                 handleSaveValidationError(entityErrors);
+                 return;
+                 }
+                 if (detail && detail.ExceptionType &&
+                 detail.ExceptionType.indexOf('OptimisticConcurrencyException') !== -1) {
+                 // Concurrency error
+                 reason =
+                 "Another user, perhaps the server, may have deleted one or all of the same entities.";
+                 }
+                 */
+
+            };
+            //$scope.gridOptions.data = $scope.table;
+        }]);
+        angular.bootstrap(document, ['AdminModule']);
+
+    });
+</script>
+</div>
+</html>
+
+
+
