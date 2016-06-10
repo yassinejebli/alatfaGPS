@@ -23,6 +23,11 @@ public class ChauffeurController {
         return repo.findAll();
     }
 
+    @RequestMapping(value="/getChauffeur/{id}", method= RequestMethod.GET)
+    public Chauffeur getChauffeur(@PathVariable("id") String id) {
+        return repo.findOne(id);
+    }
+
     @RequestMapping(method= RequestMethod.POST)
     public Chauffeur post(@RequestBody Chauffeur objet) {
         return repo.save(objet);
