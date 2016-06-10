@@ -63,6 +63,7 @@
                 { name: 'name', displayName: 'Nom et prénom', width: "*", resizable: true, },
                 { name: 'email', displayName: 'Email', width: "*", resizable: true,},
                 { name: 'tel', displayName: 'Tel', width: "*", resizable: true,},
+                { name: 'utilisateur.name', displayName: 'Utilisateur', width: "*", enableCellEditOnFocus: false, resizable: true, enableCellEdit: true, editableCellTemplate: lookupUtilisateurCellEditTemplate, },
                 { enableCellEdit: false, width: "76", name: '\'', allowCellFocus: false, headerCellTemplate: '<button class="btn cyan btn-xs btn-block" ng-click="grid.appScope.toggleFiltering()"><span class="icon-filter"></span></button>', cellTemplate: headerTemplateDelete, sortable: false },
 
             ];

@@ -16,4 +16,5 @@ import org.springframework.stereotype.Repository;
 public interface ChauffeurRepository extends MongoRepository<Chauffeur, String> {
     public Page<Chauffeur> findAllByNameContains(@Param("name") String name, Pageable pageable);
 
+    public Chauffeur findAllByUtilisateur_Id(@Param("id") String id);
 }

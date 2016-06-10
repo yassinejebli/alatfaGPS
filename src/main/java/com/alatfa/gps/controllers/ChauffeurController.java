@@ -25,7 +25,7 @@ public class ChauffeurController {
 
     @RequestMapping(value="/getChauffeur/{id}", method= RequestMethod.GET)
     public Chauffeur getChauffeur(@PathVariable("id") String id) {
-        return repo.findOne(id);
+        return repo.findAllByUtilisateur_Id(id);
     }
 
     @RequestMapping(method= RequestMethod.POST)

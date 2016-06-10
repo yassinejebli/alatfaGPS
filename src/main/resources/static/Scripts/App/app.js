@@ -71,7 +71,12 @@ var lookupRoleCellEditTemplate = '<div class="ui-grid-cell-contents"><input type
 
 
 
-
+var lookupUtilisateurCellEditTemplate = '<div class="ui-grid-cell-contents"><input type="text" ui-grid-editor autocomplete="off"  style="border: none;"  autocomplete="off" ng-model="row.entity.Utilisateur"' +
+    'typeahead="utilisateur as utilisateur.name for utilisateur in grid.appScope.lookupFactory.getBy(\'../Utilisateurs\', \'Name\', $viewValue)" ' +
+    'typeahead-input-formatter="grid.appScope.lookupFactory.format(row.entity.utilisateur,\'name\')" ' +
+    'typeahead-on-select=\'grid.appScope.lookupFactory.set(row.entity,"utilisateur","utilisateur", $item,"id")\' ' +
+    'typeahead-wait-ms=" 100" typeahead-append-to-body="true" ' +
+    'class="form-control"></div>';
 
 app.factory('crudGridDataFactory', ['$http', '$resource', function ($http, $resource) {
     var restUrl = "/rest/"
