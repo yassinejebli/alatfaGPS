@@ -62,6 +62,9 @@ var lookupVehiculeCellEditTemplate = '<div class="ui-grid-cell-contents"><input 
 var lookupDateTimeDepartCellEditTemplate = '<div class="ui-grid-cell-contents"><input type="datetime-local" ui-grid-editor   style="border: none;" ng-model="row.entity.dateDepart"' +
     'class="form-control"></div>';
 
+var lookupDateTimeFinExacteCellEditTemplate = '<div class="ui-grid-cell-contents"><input type="datetime-local" ui-grid-editor   style="border: none;" ng-model="row.entity.dateFinExacte"' +
+    'class="form-control"></div>';
+
 var lookupRoleCellEditTemplate = '<div class="ui-grid-cell-contents"><input type="text" ui-grid-editor autocomplete="off"  style="border: none;"  autocomplete="off" ng-model="row.entity.Role"' +
     'typeahead="role as role.name for role in grid.appScope.lookupFactory.getBy(\'../Roles\', \'Name\', $viewValue)" ' +
     'typeahead-input-formatter="grid.appScope.lookupFactory.format(row.entity.role,\'name\')" ' +

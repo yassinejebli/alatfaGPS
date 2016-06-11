@@ -176,11 +176,12 @@
                 { name: 'vehicule.intitule', displayName: 'Vehicule', width: "*", enableCellEditOnFocus: false, resizable: true, enableCellEdit: true, editableCellTemplate: lookupVehiculeCellEditTemplate, },
                 { name: 'pointInteretDepart.nom', displayName: 'Point départ', width: "*", enableCellEditOnFocus: false, resizable: true, enableCellEdit: true, editableCellTemplate: lookupPointInteretDepartCellEditTemplate, },
                 { name: 'dateDepart', displayName: 'Date départ', width: "*", type: "datetime-local", cellFilter: 'date:\'dd/MM/yyyy HH:mm\' ', filterCellFiltered: true,editableCellTemplate : lookupDateTimeDepartCellEditTemplate},
-                { name: 'pointInteretFin.nom', displayName: 'Point d\'arrivé', width: "*", enableCellEditOnFocus: false, resizable: true, enableCellEdit: true, editableCellTemplate: lookupPointInteretFinCellEditTemplate, },
+                { name: 'pointInteretFin.nom', displayName: 'Point d\'arrivée', width: "*", enableCellEditOnFocus: false, resizable: true, enableCellEdit: true, editableCellTemplate: lookupPointInteretFinCellEditTemplate, },
                 { name: 'dateFin', displayName: 'Date d\'arrivé', width: "*", type: "date", cellFilter: 'date:\'dd/MM/yyyy HH:mm:ss\' ', filterCellFiltered: true,  enableCellEdit: false},
                 { name: 'numBons', displayName: 'Numéro du bon de livraison', width: "*", resizable: true },
                 { name: 'kilometrageEstime', displayName: 'Kilométrage estimé', width: "*", resizable: true,type:"number" ,cellFilter:"number:2"},
                 { name: 'accomplie',displayName:'Accomplie ?', cellTemplate:'<div class="ui-grid-cell-contents" style="text-align: center !important;"><i ng-class="{\'mdi-device-access-alarms orange-text\': row.entity.accomplie != true,\'mdi-action-assignment-turned-in green-text\': row.entity.accomplie == true}"></i></div>',enableCellEdit: false,},
+                { name: 'dateFinExacte', displayName: 'Date exacte d\'arrivée ', width: "*", type: "datetime-local", cellFilter: 'date:\'dd/MM/yyyy HH:mm:ss\' ', filterCellFiltered: true,  enableCellEdit: true,editableCellTemplate:lookupDateTimeFinExacteCellEditTemplate},
                 { enableCellEdit: false, width: "76", name: '\'', allowCellFocus: false, headerCellTemplate: '<button class="btn cyan btn-xs btn-block" ng-click="grid.appScope.toggleFiltering()"><span class="icon-filter"></span></button>', cellTemplate: headerTemplateDelete, sortable: false },
 
             ];
