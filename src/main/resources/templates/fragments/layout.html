@@ -116,7 +116,7 @@
                     <a href="/" class="waves-effect waves-cyan"><i class="mdi-action-dashboard"></i> TABLEAU DE BORD</a>
                 </li>
                 <li class="bold">
-                    <a href="/TableauBord" class="waves-effect waves-cyan"><i class="mdi-editor-insert-chart"></i> STATISTIQUES</a>
+                    <a href="/Statistique" class="waves-effect waves-cyan"><i class="mdi-editor-insert-chart"></i> STATISTIQUES</a>
                 </li>
 
                 <div sec:authorize="hasAuthority('admin')">
@@ -199,7 +199,7 @@
                     <div class="row">
                         <div class="col s12 m12 l12">
                             <ol class="breadcrumb">
-                                <li><a href="#">Administration</a></li>
+                                <li><a href="#">Administration</a> / <span th:text="${titre}"></span></li>
                                 <li class="active"></li>
                             </ol>
                         </div>

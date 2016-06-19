@@ -444,7 +444,6 @@
                                 success: function (data) {
                                     if(data.vitesse != undefined)
                                     {
-                                        console.log(data);
                                         if(new Date().getTime() - data.date > 5000 || data.vitesse < 1 || new Date().getTime() - data.date < 0)
                                         {
                                             i.compteur.option.series[0].data[0].value = 0;//vitesse

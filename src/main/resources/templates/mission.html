@@ -280,7 +280,7 @@
                         item.dateFin = item.dateDepart + time*1000;
                         map.removeRoutes();
                         $scope.$apply(); // appliquer les changements dans la vue
-                        $scope.update(null,item);
+                       // $scope.update(null,item);
                         //console.log(time + " " + distance);
                     }
                 });
@@ -327,22 +327,7 @@
                 $scope.items = data;
                 $scope.gridOptions.data = $scope.items;
 
-                //$scope.totalServerItems = data["odata.count"];
-                //if ($scope.items.length > 0) {
-                //    if ($scope.item) {
-                //        for (i = 0; i < $scope.items.length; i++) {
-                //            if ($scope.items[i].id == $scope.item.id)
-                //                $scope.dataGrid.selectedItem = $scope.items[i];
-                //        }
-                //    }
-                //    if ($scope.dataGrid.selectedItem == null) {
-                //        $scope.dataGrid.selectedItem = $scope.items[0];
-                //    }
 
-                //    $scope.setItem($scope.dataGrid.selectedItem);
-                //}
-
-                //notificationFactory.success("Fetched " + data.value.length + " " + $scope.table);
             }
 
             function queryFailed(error) {
