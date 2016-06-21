@@ -320,7 +320,7 @@
                             splitNumber:2,
                             axisLine: {
                                 lineStyle: {
-                                    color: [[0.2, 'lime'],[0.8, '#1e90ff'],[1, '#ff4500']],
+                                    color: [[0.2, '#ff4500'],[0.8, '#1e90ff'],[1, 'lime']],
                                     width: 2,
                                     shadowColor : '#fff',
                                     shadowBlur: 10
@@ -343,9 +343,9 @@
                                 },
                                 formatter:function(v){
                                     switch (v + '') {
-                                        case '0' : return 'F';
+                                        case '0' : return 'E';
                                         case '1' : return 'Carb';
-                                        case '2' : return 'E';
+                                        case '2' : return 'F';
                                     }
                                 }
                             },
@@ -427,7 +427,7 @@
                             detail : {
                                 show: false
                             },
-                            data:[{value: 0, name: 'carb'}]
+                            data:[{value: 0, name: 'eau'}]
                         }
                     ]
 
@@ -444,6 +444,8 @@
                                 success: function (data) {
                                     if(data.vitesse != undefined)
                                     {
+                                        i.compteur.option.series[2].data[0].value = data.niveauCarburant/10;//niveau ducarburant
+
                                         if(new Date().getTime() - data.date > 5000 || data.vitesse < 1 || new Date().getTime() - data.date < 0)
                                         {
                                             i.compteur.option.series[0].data[0].value = 0;//vitesse
@@ -503,6 +505,12 @@
                 }*/
                 //$scope.circles = [];
                 $scope.markers = lookupFactory.getAll("pointInterets");
+
+                for (var i = 0; i < $scope.circles.length; i++) {
+                    $scope.circles[i].setMap(null);
+                }
+                $scope.circles = [];
+
                 for(var i = 0;i<$scope.markers.length; i++)
                 {
                     var m = $scope.markers[i];

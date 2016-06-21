@@ -12,14 +12,18 @@
             <div id="compteur" style="height:250px;width:100%;"></div>
         </div>
         <div class="row"  ng-show="item != undefined">
-            <div class="row">
+            <div class="row" style="margin-top:25px;">
                 <img style="width: 100%;height: 180px;" src="{{item.image}}"/>
             </div>
             <div class="row">
+                <p><i class="mdi-maps-local-gas-station cyan-text text-darken-2"></i><span style="font-weight: bolder"></span> Niveau du carburant : <div class="bouteille">
+                <div class="carburant"></div>
+            </div> </p>
                 <p><i class="mdi-maps-directions-car cyan-text text-darken-2"></i><span style="font-weight: bolder"> Matricule : </span><span>{{item.matricule}}</span>  </p>
                 <p><i class="mdi-action-perm-identity cyan-text text-darken-2"></i><span style="font-weight: bolder"> Chaffeur : </span><span>{{item.chauffeur.name}}</span>  </p>
                 <p><i class="mdi-action-perm-phone-msg cyan-text text-darken-2"></i><span style="font-weight: bolder"> Tel : </span><span>{{item.chauffeur.tel}}</span>  </p>
                 <p><i class="mdi-navigation-unfold-more cyan-text text-darken-2"></i><span style="font-weight: bolder"></span> Kilomètrage : <span style="font-weight: bold;">{{item.kilometrage | number:2}} Km.</span>  </p>
+                <p><i class="mdi-action-settings-remote cyan-text text-darken-2"></i><span style="font-weight: bolder"></span> Couper le moteur :   <a ng-click="couper()" class="btn-floating waves-effect waves-light red"><i class="mdi-action-settings-input-component"></i></a>  </p>
 
             </div>
         </div>
@@ -69,6 +73,7 @@
         app.controller("AdminCtrl", ['$filter','$scope', '$element', 'Animations', 'uiGridConstants', '$timeout', '$interval', '$attrs', 'crudGridDataFactory', 'notificationFactory', 'lookupFactory', function ($filter,$scope, $element, Animations, uiGridConstants, $timeout, $interval, $attrs, crudGridDataFactory, notificationFactory, lookupFactory) {
             $scope.table = "vehicules";
             $scope.refresh = true;
+            $scope.carburant = false;
             $scope.lookupFactory = lookupFactory;
             //alatfa 31.630758,-8.062641
             var map = new GMaps({
@@ -81,6 +86,13 @@
 
             });
 
+            $scope.couper = function()
+            {
+                if (confirm("êtes vous sûr de vouloir couper son moteur ?!! ")) {
+
+                }
+
+            }
             $scope.rechercherAdresse=function()
             {
                 if($scope.adresse == "" || $scope.adresse == undefined)
@@ -242,7 +254,13 @@
                                 if($scope.gridApi.selection.getSelectedRows().length == 1)
                                 {
                                     map.setCenter(data.latitude, data.longitude);
+                                    $('.carburant').animate({
+                                        height: data.niveauCarburant+'%'
+                                    }, 1000);
                                 }
+
+                                //pour le véhicule selectionné
+
                             }
 
                         });
@@ -316,22 +334,7 @@
 
 
 
-            $scope.delete = function (e, item) {
-                //console.log(item)
-                if (confirm("Voulez-vous supprimer cet enregistrement ?")) {
 
-                    if (item.id != null) {
-                        $scope.deleteMode = true;
-                        crudGridDataFactory($scope.table).remove({ key: item.id }, item, saveSucceeded, saveFailed);
-                        $scope.gridOptions.data.splice($scope.gridOptions.data.indexOf(item), 1);
-
-                    } else {
-                        $scope.gridOptions.data.splice($scope.gridOptions.data.indexOf(item), 1);
-
-                    }
-                }
-
-            }
 
             /*region generique*/
             function queryFailed(error) {

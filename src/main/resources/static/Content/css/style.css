@@ -1,5 +1,24 @@
 /*mystyle*/
 
+.bouteille {
+  margin: 10px auto;
+  height: 80px;
+  width: 60px;
+  position: relative;
+  border-style: none solid solid solid;
+  border-width: 10px;
+  border-color: lightgray;
+  border-radius: 10px;
+}
+
+.carburant {
+  width: 100%;
+  height: 10%;
+  background-color: #E6B420;
+  position: absolute;
+  bottom: 0;
+}
+
 .titre {
   background:#0099FF;
   background-position:left 20px top;
